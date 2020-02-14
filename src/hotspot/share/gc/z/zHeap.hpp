@@ -25,7 +25,7 @@
 #define SHARE_GC_Z_ZHEAP_HPP
 
 #include "gc/z/zAllocationFlags.hpp"
-#include "gc/z/zForwardingTable.hpp"
+#include "gc/z/zFragmentTable.hpp"
 #include "gc/z/zMark.hpp"
 #include "gc/z/zObjectAllocator.hpp"
 #include "gc/z/zPage.hpp"
@@ -38,6 +38,7 @@
 #include "gc/z/zServiceability.hpp"
 #include "gc/z/zUnload.hpp"
 #include "gc/z/zWorkers.hpp"
+#include "gc/z/zLock.inline.hpp"
 
 class ThreadClosure;
 
@@ -51,7 +52,7 @@ private:
   ZObjectAllocator    _object_allocator;
   ZPageAllocator      _page_allocator;
   ZPageTable          _page_table;
-  ZForwardingTable    _forwarding_table;
+  ZFragmentTable      _fragment_table;
   ZMark               _mark;
   ZReferenceProcessor _reference_processor;
   ZWeakRootsProcessor _weak_roots_processor;
@@ -73,6 +74,7 @@ private:
 
 public:
   static ZHeap* heap();
+  ZLock global_lock;
 
   ZHeap();
 
