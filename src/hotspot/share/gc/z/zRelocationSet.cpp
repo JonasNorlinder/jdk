@@ -22,35 +22,35 @@
  */
 
 #include "precompiled.hpp"
-#include "gc/z/zForwarding.hpp"
+#include "gc/z/zFragment.hpp"
 #include "gc/z/zRelocationSet.hpp"
 #include "memory/allocation.hpp"
 
 ZRelocationSet::ZRelocationSet() :
-    _forwardings(NULL),
-    _nforwardings(0) {}
+    _fragments(NULL),
+    _nfragments(0) {}
 
 void ZRelocationSet::populate(ZPage* const* group0, size_t ngroup0,
                               ZPage* const* group1, size_t ngroup1) {
-  _nforwardings = ngroup0 + ngroup1;
-  _forwardings = REALLOC_C_HEAP_ARRAY(ZForwarding*, _forwardings, _nforwardings, mtGC);
+  _nfragments = ngroup0 + ngroup1;
+  _fragments = REALLOC_C_HEAP_ARRAY(ZFragment*, _fragments, _nfragments, mtGC);
 
   size_t j = 0;
 
   // Populate group 0
   for (size_t i = 0; i < ngroup0; i++) {
-    _forwardings[j++] = ZForwarding::create(group0[i]);
+    _fragments[j++] = ZFragment::create(group0[i]);
   }
 
   // Populate group 1
   for (size_t i = 0; i < ngroup1; i++) {
-    _forwardings[j++] = ZForwarding::create(group1[i]);
+    _fragments[j++] = ZFragment::create(group1[i]);
   }
 }
 
 void ZRelocationSet::reset() {
-  for (size_t i = 0; i < _nforwardings; i++) {
-    ZForwarding::destroy(_forwardings[i]);
-    _forwardings[i] = NULL;
+  for (size_t i = 0; i < _nfragments; i++) {
+    ZFragment::destroy(_fragments[i]);
+    _fragments[i] = NULL;
   }
 }

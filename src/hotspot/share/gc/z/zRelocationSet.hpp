@@ -26,15 +26,15 @@
 
 #include "memory/allocation.hpp"
 
-class ZForwarding;
+class ZFragment;
 class ZPage;
 
 class ZRelocationSet {
   template <bool> friend class ZRelocationSetIteratorImpl;
 
 private:
-  ZForwarding** _forwardings;
-  size_t        _nforwardings;
+  ZFragment**   _fragments;
+  size_t        _nfragments;
 
 public:
   ZRelocationSet();
@@ -53,7 +53,7 @@ private:
 public:
   ZRelocationSetIteratorImpl(ZRelocationSet* relocation_set);
 
-  bool next(ZForwarding** forwarding);
+  bool next(ZFragment** forwarding);
 };
 
 // Iterator types
