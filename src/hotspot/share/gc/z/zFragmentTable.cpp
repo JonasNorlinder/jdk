@@ -18,8 +18,8 @@ void ZFragmentTable::insert(ZFragment* fragment) {
 }
 
 void ZFragmentTable::remove(ZFragment* fragment) {
-  const uintptr_t offset = fragment->start();
-  const size_t size = fragment->size();
+  const uintptr_t offset = fragment->old_start();
+  const size_t size = fragment->old_size();
 
   assert(_map.get(offset) == fragment, "Invalid entry");
   _map.put(offset, size, NULL);

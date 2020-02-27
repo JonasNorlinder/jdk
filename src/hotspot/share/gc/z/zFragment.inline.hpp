@@ -2,11 +2,11 @@
 #define SHARE_GC_Z_ZFRAGMENT_INLINE_HPP
 
 #include "gc/z/zFragment.hpp"
-#include "gc/z/zPage.inline.hpp"
-#include "gc/z/zAttachedArray.inline.hpp"
+#include "gc/z/zPage.hpp"
+#include "gc/z/zAttachedArray.hpp"
 #include "gc/z/zFragment.hpp"
-#include "gc/z/zFragmentEntry.inline.hpp"
-#include "gc/z/zHeap.inline.hpp"
+#include "gc/z/zFragmentEntry.hpp"
+#include "gc/z/zHeap.hpp"
 #include "gc/z/zHash.inline.hpp"
 #include "runtime/atomic.hpp"
 

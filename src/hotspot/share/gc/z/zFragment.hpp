@@ -1,11 +1,12 @@
-#ifndef SHARE_GC_Z_ZFRAGMENTTABLE_HPP
-#define SHARE_GC_Z_ZFRAGMENTTABLE_HPP
+#ifndef SHARE_GC_Z_ZFRAGMENT_HPP
+#define SHARE_GC_Z_ZFRAGMENT_HPP
 
 #include "gc/z/zFragmentEntry.hpp"
 #include "gc/z/zAttachedArray.hpp"
 #include "gc/z/zVirtualMemory.hpp"
-#include "gc/z/zPage.inline.hpp"
+#include "gc/z/zPage.hpp"
 
+class ZPage;
 class ZFragment {
 private:
   typedef ZAttachedArray<ZFragment, ZFragmentEntry> AttachedArray;

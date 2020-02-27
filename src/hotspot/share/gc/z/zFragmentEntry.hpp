@@ -2,7 +2,6 @@
 #define SHARE_GC_Z_ZFRAGMENTENTRY_HPP
 
 #include "gc/z/zBitField.hpp"
-#include "gc/z/zFragment.hpp"
 
 // Fragment Table Entry Layout
 // -----------------------

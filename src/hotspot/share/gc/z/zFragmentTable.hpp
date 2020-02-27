@@ -2,6 +2,7 @@
 #define SHARE_GC_Z_ZFRAGMENTTABLE_HPP
 
 #include "gc/z/zGranuleMap.hpp"
+#include "gc/z/zFragment.hpp"
 
 class ZFragment;
 

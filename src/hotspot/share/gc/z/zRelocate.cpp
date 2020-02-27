@@ -95,19 +95,19 @@ void ZRelocate::start() {
 uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_offset) const {
   // Lookup fragment entry
   const ZFragmentEntry* entry = fragment->find(from_offset);
-  if (entry.copied()) {
+  if (entry->copied()) {
     // Already relocated, return new address
-    return entry.to_offset();
+    return entry->to_offset();
   }
   assert(ZHeap::heap()->is_object_live(ZAddress::good(from_offset)), "Should be live");
 
   ZHeap* heap = ZHeap::heap();
   heap->global_lock.lock();
-  if (entry.copied()) {
+  if (entry->copied()) {
     // Another thread beat us to it
     // return new adress
     heap->global_lock.unlock();
-    return entry.to_new_adreess();
+    return entry->to_new_adreess();
   }
 
   // Reallocate all live objects within fragment
@@ -130,7 +130,7 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
   // Copy object
   ZUtils::object_copy(from_good, to_good, size);
 
-  entry
+  //entry
   heap->global_lock.unlock();
   return to_offset_final;
 }
