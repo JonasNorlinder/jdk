@@ -16,7 +16,7 @@ private:
 
   const AttachedArray     _entries;
   const size_t            _object_alignment_shift;
-  const ZPage*            _old_page;
+  ZPage*            _old_page;
   const ZVirtualMemory    _old_virtual;
   ZPage*            _new_page;
   volatile uint32_t       _refcount;
@@ -34,8 +34,8 @@ public:
 
   const uintptr_t old_start();
   const size_t old_size();
-  const ZPage* old_page() const;
-  ZPage* new_page();
+  ZPage* old_page() const;
+  ZPage* new_page() const;
   void fill_entires();
 
   ZFragmentEntry* find(uintptr_t from_addr) const;

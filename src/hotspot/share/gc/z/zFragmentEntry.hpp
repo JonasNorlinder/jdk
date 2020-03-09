@@ -42,7 +42,7 @@ public:
   bool get_liveness(size_t index) const;
   void set_liveness(size_t index);
 
-  int32_t get_next_live_object(ZFragmentObjectCursor* cursor, size_t* size);
+  int32_t get_next_live_object(ZFragmentObjectCursor* cursor);
   size_t fragment_internal_index(uintptr_t old_page, uintptr_t from_offset);
 
   uint32_t get_live_bytes() const;

@@ -11,11 +11,11 @@
 #include "runtime/atomic.hpp"
 #include <iostream>
 
-inline ZPage* ZFragment::new_page() {
+inline ZPage* ZFragment::new_page() const {
   return _new_page;
 }
 
-inline const ZPage* ZFragment::old_page() const {
+inline ZPage* ZFragment::old_page() const {
   return _old_page;
 }
 

@@ -84,7 +84,7 @@ inline uint32_t ZFragmentEntry::calc_fragment_live_bytes(ZFragment* fragment, si
   return live_bytes;
 }
 
-inline int32_t ZFragmentEntry::get_next_live_object(ZFragmentObjectCursor* cursor, size_t* size) {
+inline int32_t ZFragmentEntry::get_next_live_object(ZFragmentObjectCursor* cursor) {
   ZFragmentObjectCursor local_cursor = *cursor;
   assert(local_cursor < 33, "cursor value too large");
   if (local_cursor == 32) {
@@ -92,25 +92,14 @@ inline int32_t ZFragmentEntry::get_next_live_object(ZFragmentObjectCursor* curso
   }
   int32_t object = -1;
   uint32_t live_bits = _entry;
-  bool count = false;
-  size_t local_size = 0;
 
   for (bool live = get_liveness(local_cursor);local_cursor<32;local_cursor++) {
-    if (live && !count) { // first encounter
-      object = local_cursor;
-      local_cursor++;
-      local_size++;
-      count = true;
-    } else if (live && count) { // last encounter
-      *size = (local_size + 1) << 3;
+    if (live) {
       *cursor = local_cursor + 1;
       return object;
-    } else if (count) {
-      local_size++;
     }
   }
 
-  assert(!count, "live bits should always be in pairs");
   return object;
 }
 

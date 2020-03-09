@@ -114,11 +114,12 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
 
   // Reallocate all live objects within fragment
   ZFragmentObjectCursor cursor = 0;
-  size_t size = 0;
   int32_t live_index=-1;
   do {
-    live_index = entry->get_next_live_object(&cursor, &size);
+    live_index = entry->get_next_live_object(&cursor);
     uintptr_t to_offset = fragment->to_offset(from_offset, entry);
+    size_t p_index = fragment->page_index(from_offset);
+    size_t size = (fragment->size_entries_begin() + p_index)->entry;
     uintptr_t to_good = fragment->new_page()->alloc_object(size);
     assert(to_good != 0, "couldn't allocate space for object");
 
@@ -170,7 +171,7 @@ bool ZRelocate::work(ZRelocationSetParallelIterator* iter) {
   for (ZFragment* fragment; iter->next(&fragment);) {
     // Relocate objects in page
     ZRelocateObjectClosure cl(this, fragment);
-    //fragment->old_page()->object_iterate(&cl);
+    fragment->old_page()->object_iterate(&cl);
 
     if (fragment->is_pinned()) {
       // Relocation failed, page is now pinned
