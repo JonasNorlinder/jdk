@@ -27,6 +27,10 @@ inline const size_t ZFragment::old_size() {
   return _old_virtual.size();
 }
 
+inline ZSizeEntry* ZFragment::size_entries_begin() const {
+  return (ZSizeEntry*)((ZFragmentEntry*)(_entries(this)) + _entries.length()) ;
+}
+
 inline const size_t ZFragment::entries_count() {
   return _entries.length();
 }
@@ -88,10 +92,18 @@ inline size_t ZFragment::offset_to_internal_index(uintptr_t from_offset) const {
   return (from_offset - old_page()->start()) / 8 % 32;
 }
 
+inline uintptr_t ZFragment::from_offset(size_t entry_index, size_t internal_index) const {
+  return old_page()->start() + (entry_index * 256) + (internal_index * 8);
+}
+
 inline ZFragmentEntry* ZFragment::find(uintptr_t from_offset) const {
   // TODO: Add explaination of magical 2 instrucion lookup
   //return (ZFragmentEntry*)(from_offset >> 5) - _conversion_constant + (uintptr_t)this->entries_begin();
   return entries_begin() + offset_to_index(from_offset);
+}
+
+inline uintptr_t ZFragment::page_index(uintptr_t from_offset) {
+  return (from_offset - old_page()->start()) / 8;
 }
 
 inline void ZFragment::calc_fragments_live_bytes() {
@@ -99,9 +111,9 @@ inline void ZFragment::calc_fragments_live_bytes() {
   ZFragmentEntry* p = entries_begin();
   const ZFragmentEntry* end = entries_end();
   uint32_t accumulated_live_bytes = 0;
-  for (; p < end; p++) {
+  for (size_t i = 0; p < end; p++, i++) {
     p->set_live_bytes(accumulated_live_bytes);
-    accumulated_live_bytes += p->calc_fragment_live_bytes();
+    accumulated_live_bytes += p->calc_fragment_live_bytes(this, i);
   }
 }
 
@@ -125,9 +137,13 @@ inline void ZFragment::fill_entires() {
       ZFragmentEntry* entry = find(offset);
       size_t internal_index = offset_to_internal_index(offset);
       entry->set_liveness(internal_index);
+
       const size_t size = ZUtils::object_size(addr);
-      entry->set_size_bit(internal_index, size);
-      //if (size / 8 > 3) std::cout << size/8 << std::endl;
+      size_t p_index = page_index(offset);
+      assert(p_index < old_page()->size()/8, "");
+      //std::cout << "p_index = " << p_index << std::endl;
+      ZSizeEntry* size_entry = size_entries_begin() + p_index;
+      size_entry->entry = size;
 
       // Find next bit after this object
       const uintptr_t next_addr = align_up(addr + size, 1 << old_page()->object_alignment_shift());
@@ -151,7 +167,7 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* ent
   return
     new_page()->start() +
     entry->get_live_bytes() +
-    entry->count_live_objects(page_base, from_offset);
+    entry->count_live_objects(page_base, from_offset, this);
 }
 
 #endif // SHARE_GC_Z_ZFRAGMENT_INLINE_HPP
