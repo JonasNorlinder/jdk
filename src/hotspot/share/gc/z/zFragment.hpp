@@ -15,7 +15,6 @@ private:
   typedef ZAttachedArray<AttachedArray, ZSizeEntry> SizeAttachedArray;
 
   const AttachedArray     _entries;
-  const SizeAttachedArray _size_entries;
   const size_t            _object_alignment_shift;
   const ZPage*            _old_page;
   const ZVirtualMemory    _old_virtual;
