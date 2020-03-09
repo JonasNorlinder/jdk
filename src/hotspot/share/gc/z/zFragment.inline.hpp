@@ -28,10 +28,10 @@ inline const size_t ZFragment::old_size() {
 }
 
 inline ZSizeEntry* ZFragment::size_entries_begin() const {
-  return (ZSizeEntry*)((ZFragmentEntry*)(_entries(this)) + _entries.length()) ;
+  return (ZSizeEntry*) entries_begin() + entries_count();
 }
 
-inline const size_t ZFragment::entries_count() {
+inline size_t ZFragment::entries_count() const {
   return _entries.length();
 }
 
@@ -71,8 +71,8 @@ inline bool ZFragment::retain_page() {
 
 inline void ZFragment::release_page() {
   if (dec_refcount()) {
-    ZHeap::heap()->free_page(const_cast<ZPage*>(_old_page), true /* reclaimed */);
-    _old_page = NULL;
+     ZHeap::heap()->free_page(const_cast<ZPage*>(_old_page), true /* reclaimed */);
+     _old_page = NULL;
   }
 }
 

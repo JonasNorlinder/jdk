@@ -51,7 +51,7 @@ public:
   bool retain_page();
   void release_page();
 
-  const size_t entries_count();
+  size_t entries_count() const;
   ZFragmentEntry* entries_begin() const;
   ZFragmentEntry* entries_end();
 
