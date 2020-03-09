@@ -18,7 +18,7 @@ private:
   const size_t            _object_alignment_shift;
   const ZPage*            _old_page;
   const ZVirtualMemory    _old_virtual;
-  const ZPage*            _new_page;
+  ZPage*            _new_page;
   volatile uint32_t       _refcount;
   volatile bool           _pinned;
   uint64_t                _conversion_constant;
@@ -35,7 +35,7 @@ public:
   const uintptr_t old_start();
   const size_t old_size();
   const ZPage* old_page() const;
-  const ZPage* new_page();
+  ZPage* new_page();
   void fill_entires();
 
   ZFragmentEntry* find(uintptr_t from_addr) const;

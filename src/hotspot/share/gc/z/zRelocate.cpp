@@ -119,8 +119,11 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
   do {
     live_index = entry->get_next_live_object(&cursor, &size);
     uintptr_t to_offset = fragment->to_offset(from_offset, entry);
+    uintptr_t to_good = fragment->new_page()->alloc_object(size);
+    assert(to_good != 0, "couldn't allocate space for object");
+
     ZUtils::object_copy(ZAddress::good(from_offset),
-                        ZAddress::good(to_offset),
+                        to_good,
                         size);
   } while (live_index != -1);
   entry->set_copied();

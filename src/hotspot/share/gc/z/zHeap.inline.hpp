@@ -135,7 +135,15 @@ inline void ZHeap::check_out_of_memory() {
 }
 
 inline bool ZHeap::is_oop(uintptr_t addr) const {
-  return ZAddress::is_good(addr) && is_object_aligned(addr) && is_in(addr);
+  bool is_good = ZAddress::is_good(addr);
+  bool object_aligned = is_object_aligned(addr);
+  bool in = is_in(addr);
+
+  assert(is_good, "is good");
+  assert(object_aligned, "object aligned");
+  assert(in, "is in");
+
+  return is_good && object_aligned && in;
 }
 
 #endif // SHARE_GC_Z_ZHEAP_INLINE_HPP

@@ -11,7 +11,7 @@
 #include "runtime/atomic.hpp"
 #include <iostream>
 
-inline const ZPage* ZFragment::new_page() {
+inline ZPage* ZFragment::new_page() {
   return _new_page;
 }
 
