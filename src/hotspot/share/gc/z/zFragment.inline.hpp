@@ -71,8 +71,8 @@ inline bool ZFragment::retain_page() {
 
 inline void ZFragment::release_page() {
   if (dec_refcount()) {
-     ZHeap::heap()->free_page(const_cast<ZPage*>(_old_page), true /* reclaimed */);
-     _old_page = NULL;
+    ZHeap::heap()->free_page(const_cast<ZPage*>(_old_page), true /* reclaimed */);
+    _old_page = NULL;
   }
 }
 
@@ -85,15 +85,15 @@ inline void ZFragment::set_pinned() {
 }
 
 inline size_t ZFragment::offset_to_index(uintptr_t from_offset) const {
-  return (from_offset - old_page()->start()) / 256;
+  return (from_offset - _ops) / 256;
 }
 
 inline size_t ZFragment::offset_to_internal_index(uintptr_t from_offset) const {
-  return (from_offset - old_page()->start()) / 8 % 32;
+  return (from_offset - _ops) / 8 % 32;
 }
 
 inline uintptr_t ZFragment::from_offset(size_t entry_index, size_t internal_index) const {
-  return old_page()->start() + (entry_index * 256) + (internal_index * 8);
+  return _ops + (entry_index * 256) + (internal_index * 8);
 }
 
 inline ZFragmentEntry* ZFragment::find(uintptr_t from_offset) const {
@@ -103,7 +103,7 @@ inline ZFragmentEntry* ZFragment::find(uintptr_t from_offset) const {
 }
 
 inline uintptr_t ZFragment::page_index(uintptr_t from_offset) {
-  return (from_offset - old_page()->start()) / 8;
+  return (from_offset - _ops) / 8;
 }
 
 inline void ZFragment::calc_fragments_live_bytes() {
@@ -130,7 +130,7 @@ inline void ZFragment::fill_entires() {
 
     while (index < end_index) {
       // Calculate object address
-      const uintptr_t offset = old_page()->start() + ((index / 2) << old_page()->object_alignment_shift());
+      const uintptr_t offset = _ops + ((index / 2) << old_page()->object_alignment_shift());
       const uintptr_t addr = ZAddress::good(offset);
 
       // Apply closure
@@ -147,7 +147,7 @@ inline void ZFragment::fill_entires() {
 
       // Find next bit after this object
       const uintptr_t next_addr = align_up(addr + size, 1 << old_page()->object_alignment_shift());
-      const BitMap::idx_t next_index = ((next_addr - ZAddress::good(old_page()->start())) >> old_page()->object_alignment_shift()) * 2;
+      const BitMap::idx_t next_index = ((next_addr - ZAddress::good(_ops)) >> old_page()->object_alignment_shift()) * 2;
       if (next_index >= end_index) {
         // End of live map
         break;
@@ -163,7 +163,7 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset) {
 }
 
 inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* entry) {
-  uintptr_t page_base = old_page()->start();
+  uintptr_t page_base = _ops;
   return
     new_page()->start() +
     entry->get_live_bytes() +

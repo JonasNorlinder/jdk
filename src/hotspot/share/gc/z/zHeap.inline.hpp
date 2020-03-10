@@ -109,6 +109,8 @@ inline uintptr_t ZHeap::relocate_object(uintptr_t addr) {
     fragment->release_page();
   }
 
+  // std::cerr << std::hex << addr << " --> " << std::hex << new_addr << "\n"; 
+  
   return new_addr;
 }
 

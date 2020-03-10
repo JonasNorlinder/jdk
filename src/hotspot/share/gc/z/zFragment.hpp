@@ -17,6 +17,7 @@ private:
   const AttachedArray     _entries;
   const size_t            _object_alignment_shift;
   ZPage*            _old_page;
+  const uintptr_t _ops; // FIXME: rename
   const ZVirtualMemory    _old_virtual;
   ZPage*            _new_page;
   volatile uint32_t       _refcount;

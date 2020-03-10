@@ -111,9 +111,9 @@ inline uint32_t ZFragmentEntry::count_live_objects(uintptr_t old_page, uintptr_t
   uint32_t live_bits = _entry;
   bool count = false;
 
-  for (bool live = get_liveness(cursor);cursor<index;cursor++) {
+  for (bool live = get_liveness(cursor); cursor<index; cursor++) {
     if (live) {
-      uintptr_t offset = fragment->from_offset(fragment->offset_to_index(from_offset), index);
+      uintptr_t offset = fragment->from_offset(fragment->offset_to_index(from_offset), cursor);
       size_t p_index = fragment->page_index(offset);
       live_bytes += (fragment->size_entries_begin() + p_index)->entry;
     }
@@ -123,7 +123,8 @@ inline uint32_t ZFragmentEntry::count_live_objects(uintptr_t old_page, uintptr_t
 }
 
 inline size_t ZFragmentEntry::fragment_internal_index(uintptr_t old_page, uintptr_t from_offset) {
-  return ((old_page - from_offset) >> 3) % 32;
+  assert(from_offset >= old_page, "XXX");
+  return ((from_offset - old_page) >> 3) % 32;
 }
 
 #endif // SHARE_GC_Z_ZFRAGMENTTABLEENTRY_INLINE_HPP
