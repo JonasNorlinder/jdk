@@ -4,7 +4,7 @@
 #include "gc/z/zPage.inline.hpp"
 #include "gc/z/zPageAllocator.hpp"
 #include "gc/z/zAllocationFlags.hpp"
-#include "gc/z/zHeap.hpp"
+#include "gc/z/zHeap.inline.hpp"
 #include "gc/z/zAddress.hpp"
 
 ZFragment::ZFragment(ZPage* old_page, ZPage* new_page, size_t nentries, size_t n_sizeentries)
@@ -52,5 +52,5 @@ ZFragment* ZFragment::create(ZPage* old_page) {
 }
 
 void ZFragment::destroy(ZFragment* fragment) {
-  // AttachedArray::free(fragment);
+  AttachedArray::free(fragment);
 }

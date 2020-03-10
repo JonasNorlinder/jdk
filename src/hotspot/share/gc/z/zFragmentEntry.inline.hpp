@@ -115,6 +115,7 @@ inline uint32_t ZFragmentEntry::count_live_objects(uintptr_t old_page, uintptr_t
     if (live) {
       uintptr_t offset = fragment->from_offset(fragment->offset_to_index(from_offset), cursor);
       size_t p_index = fragment->page_index(offset);
+      assert(p_index < 262144, "out of bounds");
       live_bytes += (fragment->size_entries_begin() + p_index)->entry;
     }
   }

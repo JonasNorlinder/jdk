@@ -103,7 +103,7 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
 
   //ssert(to_offset != last, "arrived");
   last = to_offset;
-  
+
   // std::cerr << "\t" << std::hex << from_offset << " --> " << std::hex << to_offset << "\n";
 
 
@@ -124,7 +124,7 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
 
   uintptr_t prev = 0;
   uintptr_t x = fragment->new_page()->top();
-  
+
   // Reallocate all live objects within fragment
   ZFragmentObjectCursor cursor = 0;
   int32_t live_index=-1;
@@ -136,15 +136,15 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
 
     assert(prev != to_offset, "BOOM!");
     prev = to_offset;
-    
+
     assert(size > 0, "Size was zero");
-    
+
     uintptr_t to_good = fragment->new_page()->alloc_object(size);
     assert(to_good != 0, "couldn't allocate space for object");
 
     assert(ZAddress::offset(to_good) == x, "BLAM");
-    x += size; 
-    
+    x += size;
+
     ZUtils::object_copy(ZAddress::good(from_offset),
                         to_good,
                         size);
@@ -163,9 +163,9 @@ uintptr_t ZRelocate::relocate_object(ZFragment* fragment, uintptr_t from_addr) c
 
   ZFragmentEntry *e = fragment->find(from_offset);
   if (e->copied()) {
-    return ZAddress::good(fragment->to_offset(from_addr, e));
+    return ZAddress::good(fragment->to_offset(from_offset, e));
   }
-  
+
   if (from_offset == to_offset) {
     // In-place forwarding, pin page
 
@@ -208,7 +208,6 @@ bool ZRelocate::work(ZRelocationSetParallelIterator* iter) {
       success = false;
     } else {
       // Relocation succeeded, release page
-      // FIXME: uncomment
       std::cerr << "Released!";
       fragment->release_page();
     }
