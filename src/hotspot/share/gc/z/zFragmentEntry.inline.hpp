@@ -11,11 +11,6 @@ inline void ZFragmentEntry::clear() {
   _entry = 0;
 }
 
-inline size_t ZFragmentEntry::convert_index(size_t index) const {
-  assert(index < 32, "index too large");
-  return 31 - index;
-}
-
 inline bool ZFragmentEntry::get_liveness(size_t index) const {
   // Right shift live bits in order of size index,
   // then perform bitwise AND using 1
@@ -30,14 +25,14 @@ inline bool ZFragmentEntry::get_liveness(size_t index) const {
   //                                       AND
   //   0000 0000 0000 0000 0000 0000 0000 0001
   // = 0000 0000 0000 0000 0000 0000 0000 0001 = True
-  return (_entry >> convert_index(index)) & 1UL;
+  return (_entry >> index) & 1UL;
 }
 
 inline void ZFragmentEntry::set_liveness(size_t index) {
   assert(!copied(), "Updating liveness not allowed");
   assert(ZGlobalPhase == ZPhaseMarkCompleted, "Updating liveness is not allowed");
 
-  _entry |= 1UL << convert_index(index);
+  _entry |= 1UL << index;
 }
 
 inline bool ZFragmentEntry::copied() const {
@@ -111,7 +106,8 @@ inline uint32_t ZFragmentEntry::count_live_objects(uintptr_t old_page, uintptr_t
   uint32_t live_bits = _entry;
   bool count = false;
 
-  for (bool live = get_liveness(cursor); cursor<index; cursor++) {
+  for (; cursor<index; cursor = cursor + 1) {
+    bool live = get_liveness(cursor);
     if (live) {
       uintptr_t offset = fragment->from_offset(fragment->offset_to_index(from_offset), cursor);
       size_t p_index = fragment->page_index(offset);

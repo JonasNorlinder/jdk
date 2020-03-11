@@ -33,6 +33,7 @@
 #include "gc/z/zPage.inline.hpp"
 #include "gc/z/zPageTable.inline.hpp"
 #include "utilities/debug.hpp"
+#include <map>
 
 class ZFragment;
 
@@ -99,18 +100,22 @@ inline uintptr_t ZHeap::relocate_object(uintptr_t addr) {
   ZFragment* const fragment = _fragment_table.get(addr);
   if (fragment == NULL) {
     // Not forwarding
+    assert(false, "");
     return ZAddress::good(addr);
   }
 
   // Relocate object
   const bool retained = fragment->retain_page();
-  const uintptr_t new_addr = _relocate.relocate_object(fragment, addr);
+  uintptr_t new_addr = _relocate.relocate_object(fragment, addr);
   if (retained) {
     fragment->release_page();
   }
 
-  // std::cerr << std::hex << addr << " --> " << std::hex << new_addr << "\n"; 
-  
+  //std::cerr << std::hex << addr << " --> " << std::hex << new_addr << "\n";
+  assert(fragment->new_page()->is_in(new_addr), "");
+  //assert(new_addr != prev, "no dups!");
+  //prev = new_addr;
+
   return new_addr;
 }
 
@@ -141,9 +146,9 @@ inline bool ZHeap::is_oop(uintptr_t addr) const {
   bool object_aligned = is_object_aligned(addr);
   bool in = is_in(addr);
 
-  assert(is_good, "is good");
-  assert(object_aligned, "object aligned");
-  assert(in, "is in");
+  //assert(is_good, "is good");
+  //assert(object_aligned, "object aligned");
+  //assert(in, "is in");
 
   return is_good && object_aligned && in;
 }

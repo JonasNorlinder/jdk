@@ -79,7 +79,7 @@ public:
   ZHeap();
 
   bool is_initialized() const;
-
+  uintptr_t prev;
   // Heap metrics
   size_t min_capacity() const;
   size_t max_capacity() const;
@@ -116,7 +116,7 @@ public:
   void process_non_strong_references();
 
   // Page allocation
-  ZPage* alloc_page(uint8_t type, size_t size, ZAllocationFlags flags);
+  ZPage* alloc_page(uint8_t type, size_t size, ZAllocationFlags flags, bool f);
   void undo_alloc_page(ZPage* page);
   void free_page(ZPage* page, bool reclaimed);
 

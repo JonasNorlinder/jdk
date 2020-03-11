@@ -139,14 +139,8 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
 
     assert(size > 0, "Size was zero");
 
-    uintptr_t to_good = fragment->new_page()->alloc_object(size);
-    assert(to_good != 0, "couldn't allocate space for object");
-
-    assert(ZAddress::offset(to_good) == x, "BLAM");
-    x += size;
-
     ZUtils::object_copy(ZAddress::good(from_offset),
-                        to_good,
+                        ZAddress::good(to_offset),
                         size);
   } while (live_index != -1);
   entry->set_copied();
@@ -165,7 +159,7 @@ uintptr_t ZRelocate::relocate_object(ZFragment* fragment, uintptr_t from_addr) c
   if (e->copied()) {
     return ZAddress::good(fragment->to_offset(from_offset, e));
   }
-
+  std::cerr << std::hex << from_addr << " --> " << std::hex << ZAddress::good(to_offset) << "\n";
   if (from_offset == to_offset) {
     // In-place forwarding, pin page
 

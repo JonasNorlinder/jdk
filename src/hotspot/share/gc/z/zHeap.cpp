@@ -56,6 +56,7 @@ static const ZStatCounter ZCounterOutOfMemory("Memory", "Out Of Memory", ZStatUn
 ZHeap* ZHeap::_heap = NULL;
 
 ZHeap::ZHeap() :
+  prev(0),
     _workers(),
     _object_allocator(),
     _page_allocator(&_workers, heap_min_size(), heap_initial_size(), heap_max_size(), heap_max_reserve_size()),
@@ -177,7 +178,7 @@ bool ZHeap::is_in(uintptr_t addr) const {
   // used. Note that an address with the finalizable metadata bit set
   // is not pointing into a heap view, and therefore not considered
   // to be "in the heap".
-
+  return true;
   if (ZAddress::is_in(addr)) {
     const ZPage* const page = _page_table.get(addr);
     if (page != NULL) {
@@ -215,8 +216,10 @@ void ZHeap::out_of_memory() {
   log_info(gc)("Out Of Memory (%s)", Thread::current()->name());
 }
 
-ZPage* ZHeap::alloc_page(uint8_t type, size_t size, ZAllocationFlags flags) {
+ZPage* ZHeap::alloc_page(uint8_t type, size_t size, ZAllocationFlags flags, bool f) {
   ZPage* const page = _page_allocator.alloc_page(type, size, flags);
+  page->_const_top = true;
+
   if (page != NULL) {
     // Insert page table entry
     _page_table.insert(page);

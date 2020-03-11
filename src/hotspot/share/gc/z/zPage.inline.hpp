@@ -122,6 +122,10 @@ inline uintptr_t ZPage::top() const {
   return _top;
 }
 
+inline void ZPage::set_top(uintptr_t size) {
+  _top = size;
+}
+
 inline size_t ZPage::remaining() const {
   return end() - top();
 }
@@ -227,7 +231,7 @@ inline void ZPage::object_iterate(ObjectClosure* cl) {
 
 inline uintptr_t ZPage::alloc_object(size_t size) {
   assert(is_allocating(), "Invalid state");
-
+  assert(false, "");
   const size_t aligned_size = align_up(size, object_alignment());
   const uintptr_t addr = top();
   const uintptr_t new_top = addr + aligned_size;
@@ -244,7 +248,7 @@ inline uintptr_t ZPage::alloc_object(size_t size) {
 
 inline uintptr_t ZPage::alloc_object_atomic(size_t size) {
   assert(is_allocating(), "Invalid state");
-
+  assert(false, "");
   const size_t aligned_size = align_up(size, object_alignment());
   uintptr_t addr = top();
 
@@ -268,7 +272,7 @@ inline uintptr_t ZPage::alloc_object_atomic(size_t size) {
 
 inline bool ZPage::undo_alloc_object(uintptr_t addr, size_t size) {
   assert(is_allocating(), "Invalid state");
-
+  assert(false, "");
   const uintptr_t offset = ZAddress::offset(addr);
   const size_t aligned_size = align_up(size, object_alignment());
   const uintptr_t old_top = top();
@@ -287,7 +291,7 @@ inline bool ZPage::undo_alloc_object(uintptr_t addr, size_t size) {
 
 inline bool ZPage::undo_alloc_object_atomic(uintptr_t addr, size_t size) {
   assert(is_allocating(), "Invalid state");
-
+  assert(false, "");
   const uintptr_t offset = ZAddress::offset(addr);
   const size_t aligned_size = align_up(size, object_alignment());
   uintptr_t old_top = top();

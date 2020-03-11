@@ -33,7 +33,10 @@ ZFragment* ZFragment::create(ZPage* old_page) {
   // TODO: remove new page allocation to GC threads instead.
   ZAllocationFlags flags;
   flags.set_relocation();
-  ZPage* new_page = ZHeap::heap()->alloc_page(old_page->type(), size, flags);
+  flags.set_non_blocking();
+  flags.set_worker_thread();
+  ZPage* new_page = ZHeap::heap()->alloc_page(old_page->type(), size, flags, true /* don't change top */);
+  new_page->set_top(old_page->live_bytes());
 
   // Use each bit in a 32 bit int to store liveness information,
   // where each bit spans one word in the page. One word = 8 bytes.
