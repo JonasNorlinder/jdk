@@ -25,6 +25,7 @@
 #include "gc/z/zForwarding.hpp"
 #include "gc/z/zRelocationSet.hpp"
 #include "memory/allocation.hpp"
+#include <iostream>
 
 ZRelocationSet::ZRelocationSet() :
     _forwardings(NULL),
@@ -37,15 +38,29 @@ void ZRelocationSet::populate(ZPage* const* group0, size_t ngroup0,
 
   size_t j = 0;
 
+
+  size_t junk = 0;
+  size_t count_zforwardingentry = 0;
+  log_info(gc)("Relocating Set (small pages): " SIZE_FORMAT, ngroup1);
+  log_info(gc)("Relocating Set (medium pages): " SIZE_FORMAT, ngroup0);
   // Populate group 0
   for (size_t i = 0; i < ngroup0; i++) {
-    _forwardings[j++] = ZForwarding::create(group0[i]);
+    _forwardings[j++] = ZForwarding::create(group0[i], &junk);
   }
 
   // Populate group 1
   for (size_t i = 0; i < ngroup1; i++) {
-    _forwardings[j++] = ZForwarding::create(group1[i]);
+    _forwardings[j++] = ZForwarding::create(group1[i], &count_zforwardingentry);
   }
+  size_t zforwen = count_zforwardingentry * sizeof(ZForwardingEntry);
+  size_t zfrage = ngroup1 * 8192 * sizeof(uint64_t);
+  log_info(gc)("Total amount of allocated ZForwardingEntry: " SIZE_FORMAT, count_zforwardingentry);
+  log_info(gc)("Total allocated ZForwardingEntry size: " SIZE_FORMAT, zforwen);
+  log_info(gc)("Total allocated ZFragmentEntry size: " SIZE_FORMAT, zfrage);
+
+  //std::cout << (float)zforwen/(float)zfrage << std::endl;
+
+
 }
 
 void ZRelocationSet::reset() {

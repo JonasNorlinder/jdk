@@ -28,13 +28,14 @@
 #include "utilities/debug.hpp"
 #include "utilities/powerOfTwo.hpp"
 
-ZForwarding* ZForwarding::create(ZPage* page) {
+ZForwarding* ZForwarding::create(ZPage* page, size_t* count_zforwardingentry) {
   // Allocate table for linear probing. The size of the table must be
   // a power of two to allow for quick and inexpensive indexing/masking.
   // The table is sized to have a load factor of 50%, i.e. sized to have
   // double the number of entries actually inserted.
   assert(page->live_objects() > 0, "Invalid value");
   const size_t nentries = round_up_power_of_2(page->live_objects() * 2);
+  *count_zforwardingentry = nentries + *count_zforwardingentry;
   return ::new (AttachedArray::alloc(nentries)) ZForwarding(page, nentries);
 }
 

@@ -57,7 +57,7 @@ private:
   ZForwarding(ZPage* page, size_t nentries);
 
 public:
-  static ZForwarding* create(ZPage* page);
+  static ZForwarding* create(ZPage* page, size_t* count_zforwardingentry);
   static void destroy(ZForwarding* forwarding);
 
   uintptr_t start() const;
