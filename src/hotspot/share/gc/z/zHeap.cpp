@@ -70,14 +70,36 @@ ZHeap::ZHeap() :
     _relocation_set(),
     _unload(&_workers),
     _serviceability(heap_min_size(), heap_max_size()),
-    global_lock(),
-    object_relocated(round_up_power_of_2(0x900009c0dc78)) {
+    global_lock() {
   // Install global heap instance
   assert(_heap == NULL, "Already initialized");
   _heap = this;
 
   // Update statistics
   ZStatHeap::set_at_initialize(heap_min_size(), heap_max_size(), heap_max_reserve_size());
+}
+
+
+void ZHeap::add_remap(uintptr_t from, uintptr_t to) {
+  if (contains(from) || contains(to)) {
+    assert(get_remap(from) == to, "should be the same");
+    assert(get_remap(to) == from, "should be the same");
+    return;
+  }
+  object_remaped[from] = to;
+  object_remaped[to] = from;
+}
+
+void ZHeap::remove(uintptr_t from) {
+  object_remaped.erase(from);
+}
+
+bool ZHeap::contains(uintptr_t from) const {
+  return object_remaped.count(from) == 1;
+}
+
+uintptr_t ZHeap::get_remap(uintptr_t from) const {
+  return object_remaped.at(from);
 }
 
 size_t ZHeap::heap_min_size() const {

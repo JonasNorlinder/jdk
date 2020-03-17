@@ -99,9 +99,6 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
   assert(entry != NULL, "");
   const uintptr_t to_offset = fragment->to_offset(from_offset, entry);
 
-  // std::cerr << "\t" << std::hex << from_offset << " --> " << std::hex << to_offset << "\n";
-
-
   if (entry->copied()) {
     // Already relocated, return new address
     return to_offset;
@@ -117,16 +114,13 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
     return to_offset;
   }
 
-  uintptr_t prev = 0;
-  uintptr_t x = fragment->new_page()->top();
-
   // Reallocate all live objects within fragment
   ZFragmentObjectCursor cursor = 0;
   int32_t internal_index=-1;
   size_t i = 0;
   size_t offset_index = fragment->offset_to_index(from_offset);
 
-  //std::cout << "BEGIN RELOCATE FRAGMENTENTRY" << std::endl;
+  //  std::cout << "BEGIN RELOCATE FRAGMENTENTRY" << std::endl;
   do {
     internal_index = entry->get_next_live_object(&cursor);
     if (internal_index == -1 && i == 0) {
@@ -136,26 +130,19 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
     }
     uintptr_t from_offset_entry = fragment->from_offset(offset_index, (size_t)internal_index);
     uintptr_t to_offset = fragment->to_offset(from_offset_entry, entry);
-    size_t p_index = fragment->page_index(from_offset_entry);
-    size_t size = (fragment->size_entries_begin() + p_index)->entry;
+    size_t size = ZUtils::object_size(ZAddress::good(from_offset_entry));
 
-    assert(prev != to_offset, "BOOM!");
-    prev = to_offset;
+    uintptr_t from_good = ZAddress::good(from_offset_entry);
+    uintptr_t to_good = ZAddress::good(to_offset);
 
-    assert(size > 0, "Size was zero");
+    ZHeap* heap = ZHeap::heap();
+    heap->add_remap(from_good, to_good);
 
-    std::cerr << std::hex << ZAddress::good(from_offset_entry) << " --> " << std::hex << ZAddress::good(to_offset) << "\n";
-
-    ZUtils::object_copy(ZAddress::good(from_offset_entry),
-                        ZAddress::good(to_offset),
+    //std::cerr << std::hex << from_good << "(" << size << ")" << " --> " << std::hex << to_good << "\n";
+    assert(fragment->new_page()->is_in(to_good), "");
+    ZUtils::object_copy(from_good,
+                        to_good,
                         size);
-    uintptr_t oe = ZHeap::heap()->object_relocated.get(ZAddress::good(from_offset_entry));
-
-    if (oe == 0) {
-      ZHeap::heap()->object_relocated.put(ZAddress::good(from_offset_entry), ZAddress::good(to_offset));
-    } else {
-      assert(oe == ZAddress::good(to_offset), "");
-    }
     i++;
   } while (internal_index != -1);
   //std::cout << "END RELOCATE FRAGMENTENTRY" << std::endl;
@@ -165,25 +152,17 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
   return to_offset;
 }
 
-
-
 uintptr_t ZRelocate::relocate_object(ZFragment* fragment, uintptr_t from_addr) const {
   const uintptr_t from_offset = ZAddress::offset(from_addr);
   ZHeap* heap = ZHeap::heap();
   ZFragmentEntry *e = fragment->find(from_offset);
 
   if (e->copied()) {
-    //std::cout << "copied == TRUE" << std::endl;
     uintptr_t to_good = ZAddress::good(fragment->to_offset(from_offset, e));
-    //std::cerr << std::hex << from_addr << " --> " << std::hex << to_good << "\n";
-    //assert(heap->object_relocated.get(from_addr) == to_good, "");
-
     return to_good;
   }
 
   const uintptr_t to_offset = relocate_object_inner(fragment, from_offset);
-
-  //std::cerr << std::hex << from_addr << " --> " << std::hex << ZAddress::good(to_offset) << "\n";
 
   if (from_offset == to_offset) {
     // In-place forwarding, pin page
@@ -191,20 +170,11 @@ uintptr_t ZRelocate::relocate_object(ZFragment* fragment, uintptr_t from_addr) c
     fragment->set_pinned();
   }
   uintptr_t to_good = ZAddress::good(to_offset);
-
-  //assert(heap->object_relocated.get(from_addr) == to_good, "");
-
   return to_good;
 }
 
 uintptr_t ZRelocate::forward_object(ZFragment* fragment, uintptr_t from_addr) const {
   uintptr_t to_good = ZAddress::good(fragment->to_offset(from_addr));
-  ZHeap* heap = ZHeap::heap();
-  if (heap->object_relocated.get(from_addr) == 0) {
-    //assert(false, "");
-  } else {
-    //assert(heap->object_relocated.get(from_addr) == to_good, "");
-  }
   return to_good;
 }
 
