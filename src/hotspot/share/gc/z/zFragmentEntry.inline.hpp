@@ -31,6 +31,7 @@ inline bool ZFragmentEntry::get_liveness(size_t index) const {
 inline void ZFragmentEntry::set_liveness(size_t index) {
   assert(!copied(), "Updating liveness not allowed");
   assert(ZGlobalPhase == ZPhaseMarkCompleted, "Updating liveness is not allowed");
+  assert(index < 32, "Invalid index");
 
   _entry |= 1UL << index;
 }
@@ -88,8 +89,10 @@ inline int32_t ZFragmentEntry::get_next_live_object(ZFragmentObjectCursor* curso
   int32_t object = -1;
   uint32_t live_bits = _entry;
 
-  for (bool live = get_liveness(local_cursor);local_cursor<32;local_cursor++) {
+  for (;local_cursor<32;local_cursor++) {
+    bool live = get_liveness(local_cursor);
     if (live) {
+      object = local_cursor;
       *cursor = local_cursor + 1;
       return object;
     }

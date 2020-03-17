@@ -36,6 +36,7 @@
 #include "gc/z/zStat.hpp"
 #include "gc/z/zThread.inline.hpp"
 #include "gc/z/zVerify.hpp"
+#include "gc/z/zGranuleMap.hpp"
 #include "gc/z/zWorkers.inline.hpp"
 #include "logging/log.hpp"
 #include "memory/iterator.hpp"
@@ -44,6 +45,7 @@
 #include "runtime/safepoint.hpp"
 #include "runtime/thread.hpp"
 #include "utilities/debug.hpp"
+#include "utilities/powerOfTwo.hpp"
 #include <iostream>
 
 static const ZStatSampler ZSamplerHeapUsedBeforeMark("Memory", "Heap Used Before Mark", ZStatUnitBytes);
@@ -56,7 +58,6 @@ static const ZStatCounter ZCounterOutOfMemory("Memory", "Out Of Memory", ZStatUn
 ZHeap* ZHeap::_heap = NULL;
 
 ZHeap::ZHeap() :
-  prev(0),
     _workers(),
     _object_allocator(),
     _page_allocator(&_workers, heap_min_size(), heap_initial_size(), heap_max_size(), heap_max_reserve_size()),
@@ -69,7 +70,8 @@ ZHeap::ZHeap() :
     _relocation_set(),
     _unload(&_workers),
     _serviceability(heap_min_size(), heap_max_size()),
-    global_lock() {
+    global_lock(),
+    object_relocated(round_up_power_of_2(0x900009c0dc78)) {
   // Install global heap instance
   assert(_heap == NULL, "Already initialized");
   _heap = this;
@@ -178,7 +180,6 @@ bool ZHeap::is_in(uintptr_t addr) const {
   // used. Note that an address with the finalizable metadata bit set
   // is not pointing into a heap view, and therefore not considered
   // to be "in the heap".
-  return true;
   if (ZAddress::is_in(addr)) {
     const ZPage* const page = _page_table.get(addr);
     if (page != NULL) {

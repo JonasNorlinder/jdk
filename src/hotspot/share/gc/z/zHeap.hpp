@@ -78,8 +78,9 @@ public:
 
   ZHeap();
 
+  ZGranuleMap<uintptr_t> object_relocated;
+
   bool is_initialized() const;
-  uintptr_t prev;
   // Heap metrics
   size_t min_capacity() const;
   size_t max_capacity() const;
