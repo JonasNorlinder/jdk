@@ -116,11 +116,11 @@ private:
 
   MyArena a;
   MyArena lost_objects_arena;
-  using map_allocator = MyAllocator<std::pair<uintptr_t, uint32_t> >;
+  using map_allocator = MyAllocator<std::pair<uintptr_t, uintptr_t> >;
   using ptr_to_ptr_t = unordered_map<uintptr_t, uintptr_t,
                                      std::hash<uintptr_t>, std::equal_to<uintptr_t>, map_allocator>;
   ptr_to_ptr_t object_remaped{
-                     200, std::hash<uintptr_t>(), std::equal_to<uintptr_t>(), map_allocator{a}
+                     400, std::hash<uintptr_t>(), std::equal_to<uintptr_t>(), map_allocator{a}
   };
 
   size_t heap_min_size() const;

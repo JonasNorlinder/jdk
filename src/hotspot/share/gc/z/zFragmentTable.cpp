@@ -13,6 +13,7 @@ void ZFragmentTable::insert(ZFragment* fragment) {
   const size_t size = fragment->old_size();
   assert(_map.get(offset) == NULL, "Invalid entry");
   _map.put(offset, size, fragment);
+  assert(_map.get(offset) == fragment, "");
   fragment->fill_entires();
   fragment->calc_fragments_live_bytes();
 }

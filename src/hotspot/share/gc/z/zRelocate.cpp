@@ -120,7 +120,6 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
   size_t i = 0;
   size_t offset_index = fragment->offset_to_index(from_offset);
 
-  //  std::cout << "BEGIN RELOCATE FRAGMENTENTRY" << std::endl;
   do {
     internal_index = entry->get_next_live_object(&cursor);
     if (internal_index == -1 && i == 0) {
@@ -138,14 +137,12 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
     ZHeap* heap = ZHeap::heap();
     heap->add_remap(from_good, to_good);
 
-    //std::cerr << std::hex << from_good << "(" << size << ")" << " --> " << std::hex << to_good << "\n";
     assert(fragment->new_page()->is_in(to_good), "");
     ZUtils::object_copy(from_good,
                         to_good,
                         size);
     i++;
   } while (internal_index != -1);
-  //std::cout << "END RELOCATE FRAGMENTENTRY" << std::endl;
   entry->set_copied();
 
   heap->global_lock.unlock();
@@ -174,7 +171,7 @@ uintptr_t ZRelocate::relocate_object(ZFragment* fragment, uintptr_t from_addr) c
 }
 
 uintptr_t ZRelocate::forward_object(ZFragment* fragment, uintptr_t from_addr) const {
-  uintptr_t to_good = ZAddress::good(fragment->to_offset(from_addr));
+  uintptr_t to_good = ZAddress::good(fragment->to_offset(ZAddress::offset(from_addr)));
   return to_good;
 }
 
@@ -207,7 +204,6 @@ bool ZRelocate::work(ZRelocationSetParallelIterator* iter) {
       success = false;
     } else {
       // Relocation succeeded, release page
-      std::cerr << "Released!";
       fragment->release_page();
     }
   }

@@ -67,11 +67,10 @@ inline uint32_t ZFragmentEntry::calc_fragment_live_bytes(ZFragment* fragment, si
   // Simplest implmentation as possible. NOT EFFICENT
   // TODO: change to count_leading_zeros
   size_t internal_index = 0;
-  while (internal_index < 31) {
+  while (internal_index < 32) {
     if (get_liveness(internal_index)) {
       uintptr_t offset = fragment->from_offset(entry_index, internal_index);
-      size_t p_index = fragment->page_index(offset);
-      live_bytes += (fragment->size_entries_begin() + p_index)->entry;
+      live_bytes += ZUtils::object_size(ZAddress::good(offset));
     }
 
     internal_index++;

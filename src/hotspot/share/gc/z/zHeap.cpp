@@ -82,6 +82,19 @@ ZHeap::ZHeap() :
 
 void ZHeap::add_remap(uintptr_t from, uintptr_t to) {
   if (contains(from) || contains(to)) {
+    if (!(contains(from) && contains(to)) ||
+        !(get_remap(from) == to) ||
+        !(get_remap(to) == from)) {
+      uintptr_t f = contains(from) ? get_remap(from) : 0;
+      uintptr_t t = contains(to) ? get_remap(to) : 0;
+
+      std::cout << "from = " << std::hex << from << std::endl;
+      std::cout << "to = " << std::hex << to << std::endl;
+
+      std::cout << "get_remap(from) = " << std::hex << f << std::endl;
+      std::cout << "get_remap(to) = " << std::hex << t << std::endl;
+    }
+    assert(contains(from) && contains(to), "should already exist in both directions");
     assert(get_remap(from) == to, "should be the same");
     assert(get_remap(to) == from, "should be the same");
     return;
@@ -450,7 +463,7 @@ void ZHeap::reset_relocation_set() {
   for (ZFragment* fragment; iter.next(&fragment);) {
     _fragment_table.remove(fragment);
   }
-
+  object_remaped.clear();
   // Reset relocation set
   _relocation_set.reset();
 }

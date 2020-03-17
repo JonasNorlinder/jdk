@@ -99,8 +99,8 @@ inline uintptr_t ZHeap::relocate_object(uintptr_t addr) {
 
   ZFragment* const fragment = _fragment_table.get(addr);
   if (fragment == NULL) {
+    //assert(false, "");
     // Not forwarding
-    assert(false, "");
     return ZAddress::good(addr);
   }
 
