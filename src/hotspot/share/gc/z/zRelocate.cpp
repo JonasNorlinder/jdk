@@ -105,12 +105,9 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
   }
   assert(ZHeap::heap()->is_object_live(ZAddress::good(from_offset)), "Should be live");
 
-  ZHeap* heap = ZHeap::heap();
-  heap->global_lock.lock();
   if (entry->copied()) {
     // Another thread beat us to it
     // return new adress
-    heap->global_lock.unlock();
     return to_offset;
   }
 
@@ -135,7 +132,10 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
     uintptr_t to_good = ZAddress::good(to_offset);
 
     ZHeap* heap = ZHeap::heap();
+    heap->global_lock.lock();
     heap->add_remap(from_good, to_good);
+    heap->global_lock.unlock();
+
 
     assert(fragment->new_page()->is_in(to_good), "");
     ZUtils::object_copy(from_good,
@@ -145,7 +145,6 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
   } while (internal_index != -1);
   entry->set_copied();
 
-  heap->global_lock.unlock();
   return to_offset;
 }
 
