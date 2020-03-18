@@ -24,6 +24,8 @@
 #include "precompiled.hpp"
 #include "gc/z/zFragment.hpp"
 #include "gc/z/zRelocationSet.hpp"
+#include "gc/z/zAllocationFlags.hpp"
+#include "gc/z/zHeap.inline.hpp"
 #include "memory/allocation.hpp"
 
 ZRelocationSet::ZRelocationSet() :
@@ -37,14 +39,26 @@ void ZRelocationSet::populate(ZPage* const* group0, size_t ngroup0,
 
   size_t j = 0;
 
-  // Populate group 0
+  ZAllocationFlags flags;
+  flags.set_relocation();
+  flags.set_non_blocking();
+  flags.set_worker_thread();
+
+
+  // Populate group 0 (medium)
   for (size_t i = 0; i < ngroup0; i++) {
-    _fragments[j++] = ZFragment::create(group0[i]);
+    ZPage* old_page = group0[i];
+    ZPage* new_page = ZHeap::heap()->alloc_page(old_page->type(), old_page->size(), flags, true /* don't change top */);
+    new_page->set_top(old_page->live_bytes());
+    _fragments[j++] = ZFragment::create(old_page, new_page);
   }
 
-  // Populate group 1
+  // Populate group 1 (small)
   for (size_t i = 0; i < ngroup1; i++) {
-    _fragments[j++] = ZFragment::create(group1[i]);
+    ZPage* old_page = group1[i];
+    ZPage* new_page = ZHeap::heap()->alloc_page(old_page->type(), old_page->size(), flags, true /* don't change top */);
+    new_page->set_top(old_page->live_bytes());
+    _fragments[j++] = ZFragment::create(old_page, new_page);
   }
 }
 

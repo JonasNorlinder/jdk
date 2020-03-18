@@ -11,6 +11,10 @@
 #include "runtime/atomic.hpp"
 #include <iostream>
 
+inline void ZFragment::set_new_page(ZPage* page) {
+  _new_page = page;
+}
+
 inline ZPage* ZFragment::new_page() const {
   return _new_page;
 }
@@ -122,8 +126,6 @@ inline void ZFragment::fill_entires() {
 
   for (BitMap::idx_t segment = old_page()->_livemap.first_live_segment(); segment < nsegments; segment = old_page()->_livemap.next_live_segment(segment)) {
     // For each live segment
-    //assert(is_segment_live(segment), "Must be");
-
     const BitMap::idx_t start_index = old_page()->_livemap.segment_start(segment);
     const BitMap::idx_t end_index   = old_page()->_livemap.segment_end(segment);
     BitMap::idx_t index = old_page()->_livemap._bitmap.get_next_one_offset(start_index, end_index);
@@ -141,7 +143,6 @@ inline void ZFragment::fill_entires() {
       const size_t size = ZUtils::object_size(addr);
       size_t p_index = page_index(offset);
       assert(p_index < old_page()->size()/8, "");
-      //std::cout << "p_index = " << p_index << std::endl;
       ZSizeEntry* size_entry = size_entries_begin() + p_index;
       size_entry->entry = size;
 

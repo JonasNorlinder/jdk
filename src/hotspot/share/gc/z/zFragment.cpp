@@ -24,19 +24,10 @@ ZFragment::ZFragment(ZPage* old_page, ZPage* new_page, size_t nentries, size_t n
   }
 }
 
-ZFragment* ZFragment::create(ZPage* old_page) {
+ZFragment* ZFragment::create(ZPage* old_page, ZPage* new_page) {
   assert(old_page != NULL, "");
   assert(old_page->live_objects() > 0, "Invalid value");
   const size_t size = old_page->size();
-
-  // Need to request new page.
-  // TODO: remove new page allocation to GC threads instead.
-  ZAllocationFlags flags;
-  flags.set_relocation();
-  flags.set_non_blocking();
-  flags.set_worker_thread();
-  ZPage* new_page = ZHeap::heap()->alloc_page(old_page->type(), size, flags, true /* don't change top */);
-  new_page->set_top(old_page->live_bytes());
 
   // Use each bit in a 32 bit int to store liveness information,
   // where each bit spans one word in the page. One word = 8 bytes.

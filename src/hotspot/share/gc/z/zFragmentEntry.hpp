@@ -9,14 +9,14 @@
 //
 //  * 63-63 (1-bit) Copied Flag
 //  |
-//  +-+--+--------------------------------+-----------------------------------+
-//  |1|11|11111 11111111 11111111 11111111|11111111 11111111 11111111 11111111|
-//  +-+--+--------------------------------+-----------------------------------+
-//    |  |                                |
-//    |  * 61-62 Overlapping              |
-//    |            entries (2-bits)       * 31-0 Live Bit Map (32-bits)
+//  +-+----------------------------------+-----------------------------------+
+//  |1|1111111 11111111 11111111 11111111|11111111 11111111 11111111 11111111|
+//  +-+----------------------------------+-----------------------------------+
+//    |                                  |
+//    |                                  |
+//    |                                  * 31-0 Live Bit Map (32-bits)
 //    |
-//    * 60-32 Amount of Live Bytes (29-bits)
+//    * 62-32 Amount of Live Bytes (31-bits)
 
 typedef size_t ZFragmentObjectCursor;
 
@@ -29,8 +29,6 @@ private:
   typedef ZBitField<uint64_t, uint32_t, 32, 31>    field_live_bytes;
   typedef ZBitField<uint64_t, bool, 63, 1>         field_copied;
 
-  size_t convert_index(size_t index) const;
-
 public:
   uint64_t         _entry;
 
@@ -42,8 +40,8 @@ public:
   bool get_liveness(size_t index) const;
   void set_liveness(size_t index);
 
-  int32_t get_next_live_object(ZFragmentObjectCursor* cursor);
-  size_t fragment_internal_index(uintptr_t old_page, uintptr_t from_offset);
+  int32_t get_next_live_object(ZFragmentObjectCursor* cursor) const;
+  size_t fragment_internal_index(uintptr_t old_page, uintptr_t from_offset) const;
 
   uint32_t get_live_bytes() const;
   void set_live_bytes(uint32_t value);
@@ -51,8 +49,8 @@ public:
   bool copied() const;
   void set_copied();
 
-  uint32_t count_live_objects(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment);
-  uint32_t calc_fragment_live_bytes(ZFragment* fragment, size_t index);
+  uint32_t count_live_objects(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment) const;
+  uint32_t calc_fragment_live_bytes(ZFragment* fragment, size_t index) const;
 
 };
 

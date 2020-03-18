@@ -60,7 +60,7 @@ inline void ZFragmentEntry::set_live_bytes(uint32_t value) {
   _entry = field_live_bytes::encode(value) | (_entry & 0x80000000FFFFFFFF);
 }
 
-inline uint32_t ZFragmentEntry::calc_fragment_live_bytes(ZFragment* fragment, size_t entry_index) {
+inline uint32_t ZFragmentEntry::calc_fragment_live_bytes(ZFragment* fragment, size_t entry_index) const {
   assert(!copied(), "Updating not allowed");
   uint32_t live_bytes = 0;
 
@@ -79,7 +79,7 @@ inline uint32_t ZFragmentEntry::calc_fragment_live_bytes(ZFragment* fragment, si
   return live_bytes;
 }
 
-inline int32_t ZFragmentEntry::get_next_live_object(ZFragmentObjectCursor* cursor) {
+inline int32_t ZFragmentEntry::get_next_live_object(ZFragmentObjectCursor* cursor) const {
   ZFragmentObjectCursor local_cursor = *cursor;
   assert(local_cursor < 33, "cursor value too large");
   if (local_cursor == 32) {
@@ -100,13 +100,12 @@ inline int32_t ZFragmentEntry::get_next_live_object(ZFragmentObjectCursor* curso
   return object;
 }
 
-inline uint32_t ZFragmentEntry::count_live_objects(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment) {
+inline uint32_t ZFragmentEntry::count_live_objects(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment) const {
   size_t index = fragment_internal_index(old_page, from_offset);
   assert(index < 32, "index out of bounds");
   uint32_t cursor = 0;
   uint32_t live_bytes = 0;
   uint32_t live_bits = _entry;
-  bool count = false;
 
   for (; cursor<index; cursor = cursor + 1) {
     bool live = get_liveness(cursor);
@@ -121,7 +120,7 @@ inline uint32_t ZFragmentEntry::count_live_objects(uintptr_t old_page, uintptr_t
   return live_bytes;
 }
 
-inline size_t ZFragmentEntry::fragment_internal_index(uintptr_t old_page, uintptr_t from_offset) {
+inline size_t ZFragmentEntry::fragment_internal_index(uintptr_t old_page, uintptr_t from_offset) const {
   assert(from_offset >= old_page, "XXX");
   return ((from_offset - old_page) >> 3) % 32;
 }
