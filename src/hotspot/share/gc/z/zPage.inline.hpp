@@ -122,7 +122,7 @@ inline uintptr_t ZPage::top() const {
   return _top;
 }
 
-inline void ZPage::set_top(uintptr_t size) {
+inline void ZPage::inc_top(uintptr_t size) {
     _top = _top + size;
 }
 

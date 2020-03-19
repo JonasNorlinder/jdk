@@ -7,24 +7,28 @@
 #include "gc/z/zHeap.inline.hpp"
 #include "gc/z/zAddress.hpp"
 
-ZFragment::ZFragment(ZPage* old_page, ZPage* new_page, size_t nentries, size_t n_sizeentries)
+ZFragment::ZFragment(ZPage* old_page, size_t nentries, size_t n_sizeentries)
   : _entries(nentries),
     _object_alignment_shift(old_page->object_alignment_shift()),
     _old_page(old_page),
     _ops(old_page->start()),
     _old_virtual(old_page->virtual_memory()),
-    _new_page(new_page),
+    _offset0(0),
+    _last_obj_page0(0),
+    _new_page0(NULL),
+    _new_page1(NULL),
+    _last_entry_index(0),
+    _last_internal_index(0),
     _refcount(1),
     _pinned(false) {
   assert(old_page != NULL, "");
 
   for (ZSizeEntry* e = size_entries_begin(); e < size_entries_begin() + n_sizeentries; e= e + 1) {
-
     e->entry = 0;
   }
 }
 
-ZFragment* ZFragment::create(ZPage* old_page, ZPage* new_page) {
+ZFragment* ZFragment::create(ZPage* old_page) {
   assert(old_page != NULL, "");
   assert(old_page->live_objects() > 0, "Invalid value");
   const size_t size = old_page->size();
@@ -37,7 +41,7 @@ ZFragment* ZFragment::create(ZPage* old_page, ZPage* new_page) {
   // information is thus 2 MB / (32 words * 8 bytes) = 8 192
   const size_t nentries = size / 256;
   const size_t n_sizeentries = size / 8;
-  ZFragment* fragment = ::new (AttachedArray::alloc(nentries+n_sizeentries)) ZFragment(old_page, new_page, nentries, n_sizeentries);
+  ZFragment* fragment = ::new (AttachedArray::alloc(nentries+n_sizeentries)) ZFragment(old_page, nentries, n_sizeentries);
 
   fragment->_conversion_constant = (old_page->start() >> 5);
 
