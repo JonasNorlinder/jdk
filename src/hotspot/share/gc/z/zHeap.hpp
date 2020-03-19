@@ -25,7 +25,7 @@
 #define SHARE_GC_Z_ZHEAP_HPP
 
 #include "gc/z/zAllocationFlags.hpp"
-#include "gc/z/zForwardingTable.hpp"
+#include "gc/z/zFragmentTable.hpp"
 #include "gc/z/zMark.hpp"
 #include "gc/z/zObjectAllocator.hpp"
 #include "gc/z/zPage.hpp"
@@ -38,8 +38,62 @@
 #include "gc/z/zServiceability.hpp"
 #include "gc/z/zUnload.hpp"
 #include "gc/z/zWorkers.hpp"
+#include "gc/z/zLock.inline.hpp"
 
 class ThreadClosure;
+
+// -- custom allocator for now begin --
+#include <unordered_map>
+#include <vector>
+using namespace std;
+class MyArena {
+public:
+  void *allocate(size_t s) {
+    return malloc(s);
+  }
+
+  void deallocate(void* p) {
+    free(p);
+  }
+};
+
+template <class T>
+class MyAllocator {
+private:
+  template<class U>
+  friend class MyAllocator;
+  MyArena& _a;
+public:
+  using value_type    = T;
+
+  explicit MyAllocator(MyArena& a) : _a(a) {}
+
+  template <class U>
+  MyAllocator(MyAllocator<U> const& o) : _a(o._a) {}
+
+  value_type* allocate(std::size_t n)
+  {
+    return static_cast<value_type*>(_a.allocate(n * sizeof(value_type)));
+  }
+
+  void deallocate(value_type* p, std::size_t) noexcept
+  {
+    _a.deallocate(p);
+  }
+
+  template <class U>
+  bool operator==(MyAllocator<U> const& o) const noexcept
+  {
+    return &_a == &o._a;
+  }
+
+  template <class U>
+  bool operator!=(MyAllocator<U> const& o) const noexcept
+  {
+    return !(*this == o);
+  }
+};
+// -- custom allocator for now end --
 
 class ZHeap {
   friend class VMStructs;
@@ -51,7 +105,7 @@ private:
   ZObjectAllocator    _object_allocator;
   ZPageAllocator      _page_allocator;
   ZPageTable          _page_table;
-  ZForwardingTable    _forwarding_table;
+  ZFragmentTable      _fragment_table;
   ZMark               _mark;
   ZReferenceProcessor _reference_processor;
   ZWeakRootsProcessor _weak_roots_processor;
@@ -59,6 +113,15 @@ private:
   ZRelocationSet      _relocation_set;
   ZUnload             _unload;
   ZServiceability     _serviceability;
+
+  MyArena a;
+  MyArena lost_objects_arena;
+  using map_allocator = MyAllocator<std::pair<uintptr_t, uintptr_t> >;
+  using ptr_to_ptr_t = unordered_map<uintptr_t, uintptr_t,
+                                     std::hash<uintptr_t>, std::equal_to<uintptr_t>, map_allocator>;
+  ptr_to_ptr_t object_remaped{
+                     400, std::hash<uintptr_t>(), std::equal_to<uintptr_t>(), map_allocator{a}
+  };
 
   size_t heap_min_size() const;
   size_t heap_initial_size() const;
@@ -72,12 +135,17 @@ private:
   void fixup_partial_loads();
 
 public:
+  void add_remap(uintptr_t from, uintptr_t to);
+  uintptr_t get_remap(uintptr_t from) const;
+  void remove(uintptr_t from);
+  bool contains(uintptr_t from) const;
+
   static ZHeap* heap();
+  ZLock global_lock;
 
   ZHeap();
 
   bool is_initialized() const;
-
   // Heap metrics
   size_t min_capacity() const;
   size_t max_capacity() const;
@@ -114,7 +182,7 @@ public:
   void process_non_strong_references();
 
   // Page allocation
-  ZPage* alloc_page(uint8_t type, size_t size, ZAllocationFlags flags);
+  ZPage* alloc_page(uint8_t type, size_t size, ZAllocationFlags flags, bool f);
   void undo_alloc_page(ZPage* page);
   void free_page(ZPage* page, bool reclaimed);
 
