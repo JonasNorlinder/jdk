@@ -22,35 +22,49 @@
  */
 
 #include "precompiled.hpp"
-#include "gc/z/zForwarding.hpp"
+#include "gc/z/zFragment.hpp"
 #include "gc/z/zRelocationSet.hpp"
+#include "gc/z/zAllocationFlags.hpp"
+#include "gc/z/zHeap.inline.hpp"
 #include "memory/allocation.hpp"
 
 ZRelocationSet::ZRelocationSet() :
-    _forwardings(NULL),
-    _nforwardings(0) {}
+    _fragments(NULL),
+    _nfragments(0) {}
 
 void ZRelocationSet::populate(ZPage* const* group0, size_t ngroup0,
                               ZPage* const* group1, size_t ngroup1) {
-  _nforwardings = ngroup0 + ngroup1;
-  _forwardings = REALLOC_C_HEAP_ARRAY(ZForwarding*, _forwardings, _nforwardings, mtGC);
+  _nfragments = ngroup0 + ngroup1;
+  _fragments = REALLOC_C_HEAP_ARRAY(ZFragment*, _fragments, _nfragments, mtGC);
 
   size_t j = 0;
 
-  // Populate group 0
+  ZAllocationFlags flags;
+  flags.set_relocation();
+  flags.set_non_blocking();
+  flags.set_worker_thread();
+
+
+  // Populate group 0 (medium)
   for (size_t i = 0; i < ngroup0; i++) {
-    _forwardings[j++] = ZForwarding::create(group0[i]);
+    ZPage* old_page = group0[i];
+    ZPage* new_page = ZHeap::heap()->alloc_page(old_page->type(), old_page->size(), flags, true /* don't change top */);
+    new_page->set_top(old_page->live_bytes());
+    _fragments[j++] = ZFragment::create(old_page, new_page);
   }
 
-  // Populate group 1
+  // Populate group 1 (small)
   for (size_t i = 0; i < ngroup1; i++) {
-    _forwardings[j++] = ZForwarding::create(group1[i]);
+    ZPage* old_page = group1[i];
+    ZPage* new_page = ZHeap::heap()->alloc_page(old_page->type(), old_page->size(), flags, true /* don't change top */);
+    new_page->set_top(old_page->live_bytes());
+    _fragments[j++] = ZFragment::create(old_page, new_page);
   }
 }
 
 void ZRelocationSet::reset() {
-  for (size_t i = 0; i < _nforwardings; i++) {
-    ZForwarding::destroy(_forwardings[i]);
-    _forwardings[i] = NULL;
+  for (size_t i = 0; i < _nfragments; i++) {
+    ZFragment::destroy(_fragments[i]);
+    _fragments[i] = NULL;
   }
 }
