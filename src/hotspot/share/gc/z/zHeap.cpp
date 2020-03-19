@@ -36,6 +36,7 @@
 #include "gc/z/zStat.hpp"
 #include "gc/z/zThread.inline.hpp"
 #include "gc/z/zVerify.hpp"
+#include "gc/z/zGranuleMap.hpp"
 #include "gc/z/zWorkers.inline.hpp"
 #include "logging/log.hpp"
 #include "memory/iterator.hpp"
@@ -44,6 +45,8 @@
 #include "runtime/safepoint.hpp"
 #include "runtime/thread.hpp"
 #include "utilities/debug.hpp"
+#include "utilities/powerOfTwo.hpp"
+#include <iostream>
 
 static const ZStatSampler ZSamplerHeapUsedBeforeMark("Memory", "Heap Used Before Mark", ZStatUnitBytes);
 static const ZStatSampler ZSamplerHeapUsedAfterMark("Memory", "Heap Used After Mark", ZStatUnitBytes);
@@ -59,20 +62,57 @@ ZHeap::ZHeap() :
     _object_allocator(),
     _page_allocator(&_workers, heap_min_size(), heap_initial_size(), heap_max_size(), heap_max_reserve_size()),
     _page_table(),
-    _forwarding_table(),
+    _fragment_table(),
     _mark(&_workers, &_page_table),
     _reference_processor(&_workers),
     _weak_roots_processor(&_workers),
     _relocate(&_workers),
     _relocation_set(),
     _unload(&_workers),
-    _serviceability(heap_min_size(), heap_max_size()) {
+    _serviceability(heap_min_size(), heap_max_size()),
+    global_lock() {
   // Install global heap instance
   assert(_heap == NULL, "Already initialized");
   _heap = this;
 
   // Update statistics
   ZStatHeap::set_at_initialize(heap_min_size(), heap_max_size(), heap_max_reserve_size());
+}
+
+
+void ZHeap::add_remap(uintptr_t from, uintptr_t to) {
+  if (contains(from) || contains(to)) {
+    if (!(contains(from) && contains(to)) ||
+        !(get_remap(from) == to) ||
+        !(get_remap(to) == from)) {
+      uintptr_t f = contains(from) ? get_remap(from) : 0;
+      uintptr_t t = contains(to) ? get_remap(to) : 0;
+
+      std::cout << "from = " << std::hex << from << std::endl;
+      std::cout << "to = " << std::hex << to << std::endl;
+
+      std::cout << "get_remap(from) = " << std::hex << f << std::endl;
+      std::cout << "get_remap(to) = " << std::hex << t << std::endl;
+    }
+    assert(contains(from) && contains(to), "should already exist in both directions");
+    assert(get_remap(from) == to, "should be the same");
+    assert(get_remap(to) == from, "should be the same");
+    return;
+  }
+  object_remaped[from] = to;
+  object_remaped[to] = from;
+}
+
+void ZHeap::remove(uintptr_t from) {
+  object_remaped.erase(from);
+}
+
+bool ZHeap::contains(uintptr_t from) const {
+  return object_remaped.count(from) == 1;
+}
+
+uintptr_t ZHeap::get_remap(uintptr_t from) const {
+  return object_remaped.at(from);
 }
 
 size_t ZHeap::heap_min_size() const {
@@ -175,7 +215,6 @@ bool ZHeap::is_in(uintptr_t addr) const {
   // used. Note that an address with the finalizable metadata bit set
   // is not pointing into a heap view, and therefore not considered
   // to be "in the heap".
-
   if (ZAddress::is_in(addr)) {
     const ZPage* const page = _page_table.get(addr);
     if (page != NULL) {
@@ -213,8 +252,10 @@ void ZHeap::out_of_memory() {
   log_info(gc)("Out Of Memory (%s)", Thread::current()->name());
 }
 
-ZPage* ZHeap::alloc_page(uint8_t type, size_t size, ZAllocationFlags flags) {
+ZPage* ZHeap::alloc_page(uint8_t type, size_t size, ZAllocationFlags flags, bool f) {
   ZPage* const page = _page_allocator.alloc_page(type, size, flags);
+  page->_const_top = f;
+
   if (page != NULL) {
     // Insert page table entry
     _page_table.insert(page);
@@ -405,10 +446,10 @@ void ZHeap::select_relocation_set() {
   // Select pages to relocate
   selector.select(&_relocation_set);
 
-  // Setup forwarding table
+  // Setup fragment table
   ZRelocationSetIterator rs_iter(&_relocation_set);
-  for (ZForwarding* forwarding; rs_iter.next(&forwarding);) {
-    _forwarding_table.insert(forwarding);
+  for (ZFragment* fragment; rs_iter.next(&fragment);) {
+    _fragment_table.insert(fragment);
   }
 
   // Update statistics
@@ -417,12 +458,12 @@ void ZHeap::select_relocation_set() {
 }
 
 void ZHeap::reset_relocation_set() {
-  // Reset forwarding table
+  // Reset fragment table
   ZRelocationSetIterator iter(&_relocation_set);
-  for (ZForwarding* forwarding; iter.next(&forwarding);) {
-    _forwarding_table.remove(forwarding);
+  for (ZFragment* fragment; iter.next(&fragment);) {
+    _fragment_table.remove(fragment);
   }
-
+  object_remaped.clear();
   // Reset relocation set
   _relocation_set.reset();
 }

@@ -60,7 +60,7 @@ ZPage* const* ZObjectAllocator::shared_small_page_addr() const {
 }
 
 ZPage* ZObjectAllocator::alloc_page(uint8_t type, size_t size, ZAllocationFlags flags) {
-  ZPage* const page = ZHeap::heap()->alloc_page(type, size, flags);
+  ZPage* const page = ZHeap::heap()->alloc_page(type, size, flags, false);
   if (page != NULL) {
     // Increment used bytes
     Atomic::add(_used.addr(), size);
