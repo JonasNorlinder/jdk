@@ -69,6 +69,7 @@ void ZPage::reset() {
   _top = start();
   _livemap.reset();
   _last_used = 0;
+  _const_top = false;
 }
 
 ZPage* ZPage::retype(uint8_t type) {
