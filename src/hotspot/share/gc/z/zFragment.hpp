@@ -17,9 +17,10 @@ private:
   const AttachedArray     _entries;
   const size_t            _object_alignment_shift;
   ZPage*                  _old_page;
-  const uintptr_t _ops; // FIXME: rename
+  const uintptr_t         _ops;
   const ZVirtualMemory    _old_virtual;
-  ZPage*                  _new_page;
+  size_t                  _offset0;
+  uintptr_t               _last_obj_page0;
   volatile uint32_t       _refcount;
   volatile bool           _pinned;
   uint64_t                _conversion_constant;
@@ -27,17 +28,26 @@ private:
   bool inc_refcount();
   bool dec_refcount();
 
-  ZFragment(ZPage* old_page, ZPage* new_page, size_t nentries, size_t n_sizeentries);
+  ZFragment(ZPage* old_page, size_t nentries, size_t n_sizeentries);
 
 public:
-  static ZFragment*  create(ZPage* old_page, ZPage* new_page);
+  static ZFragment*  create(ZPage* old_page);
   static void        destroy(ZFragment* fragment);
+
+  size_t      _last_entry_index;
+  size_t      _last_internal_index;
+
+  ZPage*                  _new_page0;
+  ZPage*                  _new_page1;
 
   const uintptr_t old_start();
   const size_t old_size();
   ZPage* old_page() const;
-  ZPage* new_page() const;
-  void set_new_page(ZPage* page);
+  ZPage* new_page(uintptr_t offset) const;
+  uintptr_t new_page_start(uintptr_t offset) const;
+  void set_offset0(size_t size);
+  void set_last_obj_page0(uintptr_t addr);
+  uintptr_t get_last_obj_page0();
   void fill_entires();
 
   ZFragmentEntry* find(uintptr_t from_addr) const;

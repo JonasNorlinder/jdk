@@ -8,15 +8,12 @@
 #include "gc/z/zFragmentEntry.inline.hpp"
 #include "gc/z/zHeap.hpp"
 #include "gc/z/zHash.inline.hpp"
+#include "gc/z/zAllocationFlags.hpp"
 #include "runtime/atomic.hpp"
 #include <iostream>
 
-inline void ZFragment::set_new_page(ZPage* page) {
-  _new_page = page;
-}
-
-inline ZPage* ZFragment::new_page() const {
-  return _new_page;
+inline ZPage* ZFragment::new_page(uintptr_t offset) const {
+  return offset > _last_obj_page0 && _last_obj_page0 > 0 ? _new_page1 : _new_page0;
 }
 
 inline ZPage* ZFragment::old_page() const {
@@ -163,12 +160,32 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset) {
   return to_offset(from_offset, find(from_offset));
 }
 
+inline uintptr_t ZFragment::new_page_start(uintptr_t offset) const {
+  if (offset > _last_obj_page0 && _last_obj_page0 > 0) {
+    return _new_page1->start();
+  } else {
+    return _new_page0->start() + _offset0;
+  }
+}
+
 inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* entry) {
-  uintptr_t page_base = _ops;
+  uintptr_t page_base = _ops; // FIXME old page start. can be removed?
   return
-    new_page()->start() +
+    new_page_start(from_offset) +
     entry->get_live_bytes() +
-    entry->count_live_objects(page_base, from_offset, this);
+    entry->count_live_objects(_ops, from_offset, this);
+}
+
+inline void ZFragment::set_offset0(size_t size) {
+  _offset0 = size;
+}
+
+inline void ZFragment::set_last_obj_page0(uintptr_t addr) {
+  _last_obj_page0 = ZAddress::offset(addr);
+}
+
+inline uintptr_t ZFragment::get_last_obj_page0() {
+  return _last_obj_page0;
 }
 
 #endif // SHARE_GC_Z_ZFRAGMENT_INLINE_HPP
