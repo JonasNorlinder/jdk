@@ -14,13 +14,15 @@ ZFragment::ZFragment(ZPage* old_page, size_t nentries, size_t n_sizeentries)
     _ops(old_page->start()),
     _old_virtual(old_page->virtual_memory()),
     _offset0(0),
-    _last_obj_page0(0),
     _new_page0(NULL),
     _new_page1(NULL),
+    _last_obj_page0(0),
     _last_entry_index(0),
     _last_internal_index(0),
     _refcount(1),
-    _pinned(false) {
+    _pinned(false),
+    _lei_updated(false),
+    _lii_updated(false) {
   assert(old_page != NULL, "");
 
   for (ZSizeEntry* e = size_entries_begin(); e < size_entries_begin() + n_sizeentries; e= e + 1) {

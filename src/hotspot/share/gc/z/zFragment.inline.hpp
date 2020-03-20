@@ -13,7 +13,7 @@
 #include <iostream>
 
 inline ZPage* ZFragment::new_page(uintptr_t offset) const {
-  return offset > _last_obj_page0 && _last_obj_page0 > 0 ? _new_page1 : _new_page0;
+  return is_in_page0(offset) ? _new_page0 : _new_page1;
 }
 
 inline ZPage* ZFragment::old_page() const {
@@ -161,6 +161,7 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset) {
 }
 
 inline uintptr_t ZFragment::new_page_start(uintptr_t offset) const {
+  assert(_old_page->is_in(offset), "");
   if (offset > _last_obj_page0 && _last_obj_page0 > 0) {
     return _new_page1->start();
   } else {
@@ -176,16 +177,71 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* ent
     entry->count_live_objects(_ops, from_offset, this);
 }
 
+inline bool ZFragment::is_in_page0(uintptr_t offset) const {
+  bool result = offset <= _last_obj_page0 || _last_obj_page0 == 0;
+  if (result) {
+    assert(offset >= _ops, "");
+  } else {
+    assert(_new_page1 != NULL, "");
+  }
+  return result;
+}
+
+inline void ZFragment::set_new_page0(ZPage* p) {
+  assert(_new_page0 == NULL, "");
+  _new_page0 = p;
+}
+
+inline void ZFragment::set_new_page1(ZPage* p) {
+  assert(_new_page1 == NULL, "");
+  _new_page1 = p;
+}
+
+inline ZPage* ZFragment::get_new_page0() {
+  return _new_page0;
+}
+
+inline ZPage* ZFragment::get_new_page1() {
+  return _new_page1;
+}
+
 inline void ZFragment::set_offset0(size_t size) {
+  assert(_offset0 == 0 || size == _offset0, "only to be set once");
   _offset0 = size;
 }
 
 inline void ZFragment::set_last_obj_page0(uintptr_t addr) {
-  _last_obj_page0 = ZAddress::offset(addr);
+  assert(_last_obj_page0 == 0 || _last_obj_page0 == addr, "should only be set once");
+  uintptr_t offset = ZAddress::offset(addr);
+  _last_obj_page0 = offset;
+
+  set_last_entry_index(offset_to_index(offset));
+  set_last_internal_index(offset_to_internal_index(offset));
 }
 
 inline uintptr_t ZFragment::get_last_obj_page0() {
   return _last_obj_page0;
+}
+
+inline void ZFragment::set_last_entry_index(size_t index) {
+  assert(!_lei_updated, "");
+  _lei_updated = true;
+  _last_entry_index = index;
+}
+
+
+inline void ZFragment::set_last_internal_index(size_t index) {
+  assert(!_lii_updated, "");
+  _lii_updated = true;
+  _last_internal_index = index;
+}
+
+inline size_t ZFragment::get_last_entry_index() {
+  return _last_entry_index;
+}
+
+inline size_t ZFragment::get_last_internal_index() {
+  return _last_internal_index;
 }
 
 #endif // SHARE_GC_Z_ZFRAGMENT_INLINE_HPP

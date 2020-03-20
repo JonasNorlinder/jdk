@@ -41,11 +41,11 @@ ZPage* ZRelocationSet::alloc_object_iterator(ZFragment* fragment, ZPage* prev) {
   ZPage* curr;
   if (prev == NULL) {
     curr = ZHeap::heap()->alloc_page(old_page->type(), old_page->size(), flags, true /* don't change top */);
-    fragment->_new_page0 = curr;
+    fragment->set_new_page0(curr);
     fragment->set_offset0(curr->top() - curr->start());
   } else {
     curr = prev;
-    fragment->_new_page0 = curr;
+    fragment->set_new_page0(curr);
     fragment->set_offset0(curr->top() - curr->start());
   }
 
@@ -67,18 +67,15 @@ ZPage* ZRelocationSet::alloc_object_iterator(ZFragment* fragment, ZPage* prev) {
       if (curr->remaining() < size) {
         curr = ZHeap::heap()->alloc_page(old_page->type(), old_page->size(), flags, true /* don't change top */);
 
-        if (fragment->_new_page0 == NULL) {
-          fragment->_new_page0 = curr;
+        if (fragment->get_new_page0() == NULL) {
+          fragment->set_new_page0(curr);
         } else {
           fragment->set_last_obj_page0(prev_obj);
-          fragment->_last_entry_index = fragment->offset_to_index(ZAddress::offset(prev_obj));
-          fragment->_last_internal_index = fragment->offset_to_internal_index(ZAddress::offset(prev_obj));
-          fragment->_new_page1 = curr;
+          fragment->set_new_page1(curr);
         }
-
       }
 
-      assert(fragment->_new_page0 != NULL, "");
+      assert(fragment->get_new_page0() != NULL, "");
       fragment->new_page(offset)->inc_top(size);
 
       // Find next bit after this object
