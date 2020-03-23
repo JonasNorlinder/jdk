@@ -10,6 +10,7 @@ class ZPage;
 
 class ZFragment {
   friend class ZFragmentEntry;
+  friend class ZLiveMapIterator;
 private:
   typedef ZAttachedArray<ZFragment, ZFragmentEntry> AttachedArray;
   typedef ZAttachedArray<AttachedArray, ZSizeEntry> SizeAttachedArray;

@@ -39,13 +39,13 @@ public:
   ZLiveMapIterator(ZFragment* fragment, ZPage *curr, ZPage *old_page, ZAllocationFlags flags) :
     _fragment(fragment), _curr(curr), _old_page(old_page), _flags(flags) {}
 
-  void do_object(oop obj) override {
+  virtual void do_object(oop obj) {
     uintptr_t offset = ZOop::to_address(obj);
     uintptr_t addr = ZAddress::good(offset);
-      
+
     const size_t size = ZUtils::object_size(addr);
     if (_curr->remaining() < size) {
-      _curr = ZHeap::heap()->alloc_page(_old_page->type(), _old_page->size(), _flags, true /* don't change top */);
+      _curr = ZHeap::heap()->alloc_page(_old_page->type(), _old_page->size(), _flags, false /* don't change top */);
 
       if (_fragment->get_new_page0() == NULL) {
         _fragment->set_new_page0(_curr);
@@ -55,14 +55,18 @@ public:
       }
     }
 
-    assert(_fragment->get_new_page0() != NULL, "");
-    _fragment->new_page(offset)->inc_top(size);
+    _fragment->new_page(offset)->alloc_object(size);
+
+    assert(_fragment->_new_page0 != NULL, "");
+    assert(_fragment->_new_page0->start() != _fragment->_new_page0->top(), "");
+    if (_fragment->_new_page1 != NULL) {
+      assert(_fragment->_new_page1->start() != _fragment->_new_page1->top(), "");
+    }
   }
 };
 
 ZPage* ZRelocationSet::alloc_object_iterator(ZFragment* fragment, ZPage* prev) {
   ZPage* old_page = fragment->old_page();
-  size_t nsegments = old_page->_livemap.nsegments;
 
   ZAllocationFlags flags;
   flags.set_relocation();
@@ -71,58 +75,15 @@ ZPage* ZRelocationSet::alloc_object_iterator(ZFragment* fragment, ZPage* prev) {
 
   ZPage* curr = NULL;
   if (prev == NULL) {
-    curr = ZHeap::heap()->alloc_page(old_page->type(), old_page->size(), flags, true /* don't change top */);
-    fragment->set_new_page0(curr);
-    fragment->set_offset0(curr->top() - curr->start());
+    curr = ZHeap::heap()->alloc_page(old_page->type(), old_page->size(), flags, false);
   } else {
     curr = prev;
-    fragment->set_new_page0(curr);
-    fragment->set_offset0(curr->top() - curr->start());
   }
+  fragment->set_new_page0(curr);
 
   ZLiveMapIterator cl = ZLiveMapIterator(fragment, curr, old_page, flags);
-  curr->_livemap.iterate(&cl, curr->start(), curr->object_alignment_shift());
-  
-  for (BitMap::idx_t segment = old_page->_livemap.first_live_segment(); segment < nsegments; segment = old_page->_livemap.next_live_segment(segment)) {
-    // For each live segment
-    const BitMap::idx_t start_index = old_page->_livemap.segment_start(segment);
-    const BitMap::idx_t end_index   = old_page->_livemap.segment_end(segment);
-
-    BitMap::idx_t index = old_page->_livemap._bitmap.get_next_one_offset(start_index, end_index);
-    
-    while (index < end_index) {
-      // Calculate object address
-      const uintptr_t offset = old_page->start() + ((index / 2) << old_page->object_alignment_shift());
-      const uintptr_t addr = ZAddress::good(offset);
-
-      // Apply closure
-      uintptr_t prev_obj = addr;
-      const size_t size = ZUtils::object_size(addr);
-      if (curr->remaining() < size) {
-        curr = ZHeap::heap()->alloc_page(old_page->type(), old_page->size(), flags, true /* don't change top */);
-
-        if (fragment->get_new_page0() == NULL) {
-          fragment->set_new_page0(curr);
-        } else {
-          fragment->set_last_obj_page0(prev_obj);
-          fragment->set_new_page1(curr);
-        }
-      }
-
-      assert(fragment->get_new_page0() != NULL, "");
-      fragment->new_page(offset)->inc_top(size);
-
-      // Find next bit after this object
-      const uintptr_t next_addr = align_up(addr + size, 1 << old_page->object_alignment_shift());
-      const BitMap::idx_t next_index = ((next_addr - ZAddress::good(old_page->start())) >> old_page->object_alignment_shift()) * 2;
-      if (next_index >= end_index) {
-        // End of live map
-        break;
-      }
-
-      index = old_page->_livemap._bitmap.get_next_one_offset(next_index, end_index);
-    }
-  }
+  old_page->_livemap.iterate(&cl, ZAddress::good(old_page->start()), old_page->object_alignment_shift());
+  assert(curr->start() != curr->top(), "");
   return curr;
 }
 
@@ -168,4 +129,3 @@ void ZRelocationSet::reset() {
     _fragments[i] = NULL;
   }
 }
-

@@ -191,6 +191,7 @@ inline void ZFragment::set_new_page0(ZPage* p) {
   assert(_new_page0 == NULL, "");
   assert(_new_page1 == NULL, "");
   _new_page0 = p;
+  set_offset0(p->top() - p->start());
 }
 
 inline void ZFragment::set_new_page1(ZPage* p) {

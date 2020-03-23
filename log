@@ -1,0 +1,35 @@
+[0.211s][info][gc] Using The Z Garbage Collector
+Size of linked list = 10000
+Size of linked list = 9900
+# To suppress the following error report, specify this argument
+# after -XX: or in .hotspotrc:  SuppressErrorAt=/zRelocate.cpp:140
+# To suppress the following error report, specify this argument# To suppress the following error report, specify this argument# To suppress the following error report, specify this argument
+
+
+# after -XX: or in .hotspotrc:  SuppressErrorAt=# after -XX: or in .hotspotrc:  SuppressErrorAt=# after -XX: or in .hotspotrc:  SuppressErrorAt=/zRelocate.cpp/zRelocate.cpp/zRelocate.cpp:140:140:140
+
+
+[thread 7487 also had an error][thread 7485 also had an error]
+[thread 7488 also had an error]
+
+#
+# A fatal error has been detected by the Java Runtime Environment:
+#
+#  Internal Error (/home/jonas/jdk/jdk/src/hotspot/share/gc/z/zRelocate.cpp:140), pid=7483, tid=7486
+#  Error: assert(fragment->new_page(from_offset_entry)->is_in(to_good)) failed
+#
+# JRE version: OpenJDK Runtime Environment (15.0) (slowdebug build 15-internal+0-adhoc.jonas.jdk)
+# Java VM: OpenJDK 64-Bit Server VM (slowdebug 15-internal+0-adhoc.jonas.jdk, mixed mode, tiered, z gc, linux-amd64)
+# Problematic frame:
+# V  [libjvm.so+0x12b77ef]  ZRelocate::relocate_object_inner(ZFragment*, unsigned long) const+0x2a1
+#
+# Core dump will be written. Default location: Core dumps may be processed with "/usr/share/apport/apport %p %s %c %d %P %E" (or dumping to /home/jonas/jdk/jdk/core.7483)
+#
+# An error report file with more information is saved as:
+# /home/jonas/jdk/jdk/hs_err_pid7483.log
+#
+# If you would like to submit a bug report, please visit:
+#   https://bugreport.java.com/bugreport/crash.jsp
+#
+Current thread is 7486
+Dumping core ...
