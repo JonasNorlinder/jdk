@@ -29,6 +29,37 @@
 #include "memory/allocation.hpp"
 #include <iostream>
 
+class ZLiveMapIterator : public ObjectClosure {
+private:
+  ZFragment* _fragment;
+  ZPage *_curr;
+  ZPage *_old_page;
+  ZAllocationFlags _flags;
+public:
+  ZLiveMapIterator(ZFragment* fragment, ZPage *curr, ZPage *old_page, ZAllocationFlags flags) :
+    _fragment(fragment), _curr(curr), _old_page(old_page), _flags(flags) {}
+
+  void do_object(oop obj) override {
+    uintptr_t offset = ZOop::to_address(obj);
+    uintptr_t addr = ZAddress::good(offset);
+      
+    const size_t size = ZUtils::object_size(addr);
+    if (_curr->remaining() < size) {
+      _curr = ZHeap::heap()->alloc_page(_old_page->type(), _old_page->size(), _flags, true /* don't change top */);
+
+      if (_fragment->get_new_page0() == NULL) {
+        _fragment->set_new_page0(_curr);
+      } else {
+        _fragment->set_last_obj_page0(addr);
+        _fragment->set_new_page1(_curr);
+      }
+    }
+
+    assert(_fragment->get_new_page0() != NULL, "");
+    _fragment->new_page(offset)->inc_top(size);
+  }
+};
+
 ZPage* ZRelocationSet::alloc_object_iterator(ZFragment* fragment, ZPage* prev) {
   ZPage* old_page = fragment->old_page();
   size_t nsegments = old_page->_livemap.nsegments;
@@ -38,7 +69,7 @@ ZPage* ZRelocationSet::alloc_object_iterator(ZFragment* fragment, ZPage* prev) {
   flags.set_non_blocking();
   flags.set_worker_thread();
 
-  ZPage* curr;
+  ZPage* curr = NULL;
   if (prev == NULL) {
     curr = ZHeap::heap()->alloc_page(old_page->type(), old_page->size(), flags, true /* don't change top */);
     fragment->set_new_page0(curr);
@@ -49,20 +80,23 @@ ZPage* ZRelocationSet::alloc_object_iterator(ZFragment* fragment, ZPage* prev) {
     fragment->set_offset0(curr->top() - curr->start());
   }
 
+  ZLiveMapIterator cl = ZLiveMapIterator(fragment, curr, old_page, flags);
+  curr->_livemap.iterate(&cl, curr->start(), curr->object_alignment_shift());
+  
   for (BitMap::idx_t segment = old_page->_livemap.first_live_segment(); segment < nsegments; segment = old_page->_livemap.next_live_segment(segment)) {
     // For each live segment
     const BitMap::idx_t start_index = old_page->_livemap.segment_start(segment);
     const BitMap::idx_t end_index   = old_page->_livemap.segment_end(segment);
 
     BitMap::idx_t index = old_page->_livemap._bitmap.get_next_one_offset(start_index, end_index);
-    uintptr_t prev_obj;
+    
     while (index < end_index) {
       // Calculate object address
       const uintptr_t offset = old_page->start() + ((index / 2) << old_page->object_alignment_shift());
       const uintptr_t addr = ZAddress::good(offset);
 
       // Apply closure
-      prev_obj = addr;
+      uintptr_t prev_obj = addr;
       const size_t size = ZUtils::object_size(addr);
       if (curr->remaining() < size) {
         curr = ZHeap::heap()->alloc_page(old_page->type(), old_page->size(), flags, true /* don't change top */);
@@ -134,3 +168,4 @@ void ZRelocationSet::reset() {
     _fragments[i] = NULL;
   }
 }
+
