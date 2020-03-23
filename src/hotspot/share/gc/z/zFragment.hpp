@@ -39,6 +39,7 @@ private:
   ZFragment(ZPage* old_page, size_t nentries, size_t n_sizeentries);
 
 public:
+  uintptr_t first_object; // the first object on the _new_page0
   static ZFragment*  create(ZPage* old_page);
   static void        destroy(ZFragment* fragment);
 

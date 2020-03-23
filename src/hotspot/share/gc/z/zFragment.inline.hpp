@@ -189,11 +189,13 @@ inline bool ZFragment::is_in_page0(uintptr_t offset) const {
 
 inline void ZFragment::set_new_page0(ZPage* p) {
   assert(_new_page0 == NULL, "");
+  assert(_new_page1 == NULL, "");
   _new_page0 = p;
 }
 
 inline void ZFragment::set_new_page1(ZPage* p) {
   assert(_new_page1 == NULL, "");
+  assert(_new_page0 != NULL, "");
   _new_page1 = p;
 }
 
