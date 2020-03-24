@@ -111,7 +111,7 @@ inline uintptr_t ZHeap::relocate_object(uintptr_t addr) {
     fragment->release_page();
   }
 
-  assert(fragment->new_page(ZAddress::offset(addr))->is_in(new_addr), "");
+  // assert(fragment->new_page(ZAddress::offset(addr))->is_in(new_addr), "");
 
   return new_addr;
 }

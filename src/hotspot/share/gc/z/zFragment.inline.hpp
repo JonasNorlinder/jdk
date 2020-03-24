@@ -161,7 +161,7 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset) {
 }
 
 inline uintptr_t ZFragment::new_page_start(uintptr_t offset) const {
-  assert(_old_page->is_in(offset), "");
+  /// assert(_old_page->is_in(offset), "");
   if (offset > _last_obj_page0 && _last_obj_page0 > 0) {
     return _new_page1->start();
   } else {
@@ -173,6 +173,8 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* ent
   uintptr_t page_base = _ops; // FIXME old page start. can be removed?
   return
     new_page_start(from_offset) +
+    /// Hypothesis: get_live_bytes below includes counts from page0 in case of an entry that spans page0 and page1.
+    /// Fix: only count the live bytes that actually fall into the current page! 
     entry->get_live_bytes() +
     entry->count_live_objects(_ops, from_offset, this);
 }
@@ -188,7 +190,7 @@ inline bool ZFragment::is_in_page0(uintptr_t offset) const {
 }
 
 inline void ZFragment::set_new_page0(ZPage* p) {
-  assert(_new_page0 == NULL, "");
+  assert(_new_page0 == NULL || _last_obj_page0 == NULL, "");
   assert(_new_page1 == NULL, "");
   _new_page0 = p;
   set_offset0(p->top() - p->start());
@@ -209,7 +211,6 @@ inline ZPage* ZFragment::get_new_page1() {
 }
 
 inline void ZFragment::set_offset0(size_t size) {
-  assert(_offset0 == 0 || size == _offset0, "only to be set once");
   _offset0 = size;
 }
 

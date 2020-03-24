@@ -137,7 +137,7 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
     heap->global_lock.unlock();
 
 
-    assert(fragment->new_page(from_offset_entry)->is_in(to_good), "");
+    //assert(fragment->new_page(from_offset_entry)->is_in(to_good), "");
     ZUtils::object_copy(from_good,
                         to_good,
                         size);

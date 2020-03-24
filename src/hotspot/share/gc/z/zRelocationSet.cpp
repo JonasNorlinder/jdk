@@ -33,34 +33,32 @@ class ZLiveMapIterator : public ObjectClosure {
 private:
   ZFragment* _fragment;
   ZPage *_curr;
-  ZPage *_old_page;
   ZAllocationFlags _flags;
+  uintptr_t _prev;
 public:
-  ZLiveMapIterator(ZFragment* fragment, ZPage *curr, ZPage *old_page, ZAllocationFlags flags) :
-    _fragment(fragment), _curr(curr), _old_page(old_page), _flags(flags) {}
+  ZLiveMapIterator(ZFragment* fragment, ZAllocationFlags flags) :
+    _fragment(fragment),
+    _curr(fragment->get_new_page0()),
+    _flags(flags),
+    _prev(0)
+  {}
 
   virtual void do_object(oop obj) {
-    uintptr_t offset = ZOop::to_address(obj);
+    uintptr_t offset = ZAddress::offset(ZOop::to_address(obj));
     uintptr_t addr = ZAddress::good(offset);
 
-    const size_t size = ZUtils::object_size(addr);
-    if (_curr->remaining() < size) {
-      _curr = ZHeap::heap()->alloc_page(_old_page->type(), _old_page->size(), _flags, false /* don't change top */);
+    bool alloc_success = (bool) _curr->alloc_object(ZUtils::object_size(addr));
 
-      if (_fragment->get_new_page0() == NULL) {
-        _fragment->set_new_page0(_curr);
-      } else {
-        _fragment->set_last_obj_page0(addr);
-        _fragment->set_new_page1(_curr);
-      }
-    }
+    if (alloc_success) {
+      _prev = addr;
 
-    _fragment->new_page(offset)->alloc_object(size);
+    } else {
+      /// Overshooting -- allocation does not fit on _current page
+      _curr = ZHeap::heap()->alloc_page(_fragment->_old_page->type(), _fragment->_old_page->size(), _flags, false);
+      _curr->alloc_object(ZUtils::object_size(addr));
 
-    assert(_fragment->_new_page0 != NULL, "");
-    assert(_fragment->_new_page0->start() != _fragment->_new_page0->top(), "");
-    if (_fragment->_new_page1 != NULL) {
-      assert(_fragment->_new_page1->start() != _fragment->_new_page1->top(), "");
+      _fragment->set_last_obj_page0(_prev);
+      _fragment->set_new_page1(_curr);
     }
   }
 };
@@ -81,7 +79,7 @@ ZPage* ZRelocationSet::alloc_object_iterator(ZFragment* fragment, ZPage* prev) {
   }
   fragment->set_new_page0(curr);
 
-  ZLiveMapIterator cl = ZLiveMapIterator(fragment, curr, old_page, flags);
+  ZLiveMapIterator cl = ZLiveMapIterator(fragment, flags);
   old_page->_livemap.iterate(&cl, ZAddress::good(old_page->start()), old_page->object_alignment_shift());
   assert(curr->start() != curr->top(), "");
   return curr;
