@@ -58,14 +58,14 @@ public:
     if (allocated_obj) {
       _prev = addr;
       _curr->inc_attached_old_pages();
-      _curr->is_in(allocated_obj);
+      assert(_curr->is_in(allocated_obj), "");
     } else {
       /// Overshooting -- allocation does not fit on current page
       ZPage* prev_curr = _curr;
       _curr = _heap->alloc_page(_fragment->_old_page->type(), _fragment->_old_page->size(), _flags, false);
       allocated_obj = _curr->alloc_object(ZUtils::object_size(addr));
       _curr->inc_attached_old_pages();
-      _curr->is_in(allocated_obj);
+      assert(_curr->is_in(allocated_obj), "");
 
       if (_prev > 0) {
         _fragment->set_last_obj_page0(_prev);
