@@ -16,6 +16,18 @@ inline ZPage* ZFragment::new_page(uintptr_t offset) const {
   return is_in_page0(offset) ? _new_page0 : _new_page1;
 }
 
+inline bool ZFragment::is_in_page0(uintptr_t offset) const {
+  bool result = offset <= _last_obj_page0 || _last_obj_page0 == 0;
+  if (result) {
+    assert(offset >= _ops, "");
+    assert(_new_page0->is_in(offset), "");
+  } else {
+    assert(_new_page1 != NULL, "");
+    assert(_new_page1->is_in(offset), "");
+  }
+  return result;
+}
+
 inline ZPage* ZFragment::old_page() const {
   return _old_page;
 }
@@ -107,14 +119,36 @@ inline uintptr_t ZFragment::page_index(uintptr_t from_offset) {
   return (from_offset - _ops) / 8;
 }
 
-inline void ZFragment::calc_fragments_live_bytes() {
-  // TODO: add assert here about which ZGC state we are in.
-  ZFragmentEntry* p = entries_begin();
+inline void ZFragment::calc_fragments_live_bytes(int32_t last_entry_index = -1, int32_t last_internal_index = -1) {
+  assert(ZGlobalPhase == ZPhaseMarkCompleted, "");
+  ZFragmentEntry* p = last_entry_index > -1 ? entries_begin() + last_entry_index : entries_begin();
   const ZFragmentEntry* end = entries_end();
   uint32_t accumulated_live_bytes = 0;
-  for (size_t i = 0; p < end; p++, i++) {
+
+  size_t expected_live_bytes_page1 = 0;
+  if (last_entry_index > -1) {
+    assert(_last_obj_page0 != 0, "");
+    expected_live_bytes_page1 = (end-1)->get_live_bytes() - p->get_live_bytes();
+
     p->set_live_bytes(accumulated_live_bytes);
-    accumulated_live_bytes += p->calc_fragment_live_bytes(this, i);
+    accumulated_live_bytes += p->calc_fragment_live_bytes(this, last_entry_index, last_internal_index);
+    p++;
+  }
+
+  size_t i = last_entry_index > -1 ? last_entry_index + 1 : 0;
+  for (; p < end; p++, i++) {
+    p->set_live_bytes(accumulated_live_bytes);
+    accumulated_live_bytes += p->calc_fragment_live_bytes(this, i, -1);
+  }
+
+  // Check for correctness
+  if (last_entry_index > -1) {
+    p = entries_begin() + last_entry_index;
+    size_t acc_lb = 0;
+    for(;p < end;p++) {
+      acc_lb += p->get_live_bytes();
+    }
+    assert(acc_lb == expected_live_bytes_page1, "");
   }
 }
 
@@ -171,34 +205,30 @@ inline uintptr_t ZFragment::new_page_start(uintptr_t offset) const {
 
 inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* entry) {
   uintptr_t page_base = _ops; // FIXME old page start. can be removed?
+
+
+
   return
     new_page_start(from_offset) +
     /// Hypothesis: get_live_bytes below includes counts from page0 in case of an entry that spans page0 and page1.
-    /// Fix: only count the live bytes that actually fall into the current page! 
+    /// Fix: only count the live bytes that actually fall into the current page!
     entry->get_live_bytes() +
     entry->count_live_objects(_ops, from_offset, this);
 }
 
-inline bool ZFragment::is_in_page0(uintptr_t offset) const {
-  bool result = offset <= _last_obj_page0 || _last_obj_page0 == 0;
-  if (result) {
-    assert(offset >= _ops, "");
-  } else {
-    assert(_new_page1 != NULL, "");
-  }
-  return result;
-}
-
 inline void ZFragment::set_new_page0(ZPage* p) {
-  assert(_new_page0 == NULL || _last_obj_page0 == NULL, "");
-  assert(_new_page1 == NULL, "");
+  assert(_new_page0 == 0 || _last_obj_page0 == 0, "");
+  assert(_new_page1 == 0, "");
   _new_page0 = p;
-  set_offset0(p->top() - p->start());
+
+  size_t offset = p->top() - p->start();
+  assert(offset != _new_page0->size(), "can't be size of page");
+  set_offset0(offset);
 }
 
 inline void ZFragment::set_new_page1(ZPage* p) {
-  assert(_new_page1 == NULL, "");
-  assert(_new_page0 != NULL, "");
+  assert(_new_page1 == 0, "");
+  assert(_new_page0 != 0, "");
   _new_page1 = p;
 }
 
@@ -216,36 +246,15 @@ inline void ZFragment::set_offset0(size_t size) {
 
 inline void ZFragment::set_last_obj_page0(uintptr_t addr) {
   assert(_last_obj_page0 == 0 || _last_obj_page0 == addr, "should only be set once");
+  assert(addr != 0, "addr is colored so can't happen");
   uintptr_t offset = ZAddress::offset(addr);
   _last_obj_page0 = offset;
 
-  set_last_entry_index(offset_to_index(offset));
-  set_last_internal_index(offset_to_internal_index(offset));
+  calc_fragments_live_bytes(offset_to_index(offset), offset_to_internal_index(offset));
 }
 
 inline uintptr_t ZFragment::get_last_obj_page0() {
   return _last_obj_page0;
-}
-
-inline void ZFragment::set_last_entry_index(size_t index) {
-  assert(!_lei_updated, "");
-  _lei_updated = true;
-  _last_entry_index = index;
-}
-
-
-inline void ZFragment::set_last_internal_index(size_t index) {
-  assert(!_lii_updated, "");
-  _lii_updated = true;
-  _last_internal_index = index;
-}
-
-inline size_t ZFragment::get_last_entry_index() {
-  return _last_entry_index;
-}
-
-inline size_t ZFragment::get_last_internal_index() {
-  return _last_internal_index;
 }
 
 #endif // SHARE_GC_Z_ZFRAGMENT_INLINE_HPP

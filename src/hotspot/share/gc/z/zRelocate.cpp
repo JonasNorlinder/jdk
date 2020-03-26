@@ -116,6 +116,7 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
   int32_t internal_index=-1;
   size_t i = 0;
   size_t offset_index = fragment->offset_to_index(from_offset);
+  ZHeap* heap = ZHeap::heap();
 
   do {
     internal_index = entry->get_next_live_object(&cursor);
@@ -129,15 +130,25 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
     size_t size = ZUtils::object_size(ZAddress::good(from_offset_entry));
 
     uintptr_t from_good = ZAddress::good(from_offset_entry);
+    assert(from_good != from_offset_entry, "");
     uintptr_t to_good = ZAddress::good(to_offset);
+    assert(to_good != to_offset, "");
 
-    ZHeap* heap = ZHeap::heap();
+    bool contains_expected = heap->contains_expected(from_offset_entry);
+    assert(contains_expected, "should have been allocated");
+    if (contains_expected) {
+      assert(heap->get_expected(from_offset_entry) == to_offset,
+             "destination at allocation phase shold match relocation phase");
+    }
+    assert(fragment->old_page()->is_in(from_good), "");
+    assert(fragment->new_page(to_offset)->is_in(to_good), "");
+
     heap->global_lock.lock();
-    heap->add_remap(from_good, to_good);
+    heap->add_remap(from_offset_entry, to_offset);
     heap->global_lock.unlock();
 
 
-    //assert(fragment->new_page(from_offset_entry)->is_in(to_good), "");
+    assert(from_good != to_good, "");
     ZUtils::object_copy(from_good,
                         to_good,
                         size);

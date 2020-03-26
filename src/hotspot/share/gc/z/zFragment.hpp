@@ -24,12 +24,8 @@ private:
   ZPage*                  _new_page0;
   ZPage*                  _new_page1;
   uintptr_t               _last_obj_page0;
-  size_t                  _last_entry_index;
-  size_t                  _last_internal_index;
   volatile uint32_t       _refcount;
   volatile bool           _pinned;
-  bool                    _lei_updated;
-  bool                    _lii_updated;
   uint64_t                _conversion_constant;
 
   bool inc_refcount();
@@ -58,10 +54,6 @@ public:
   void set_offset0(size_t size);
   void set_last_obj_page0(uintptr_t addr);
   uintptr_t get_last_obj_page0();
-  void set_last_entry_index(size_t index);
-  void set_last_internal_index(size_t index);
-  size_t get_last_entry_index();
-  size_t get_last_internal_index();
 
   void fill_entires();
 
@@ -85,7 +77,7 @@ public:
   uintptr_t page_index(uintptr_t offset);
   ZSizeEntry* size_entries_begin() const;
 
-  void calc_fragments_live_bytes();
+  void calc_fragments_live_bytes(int32_t last_entry_index, int32_t last_internal_index);
 };
 
 #endif // SHARE_GC_Z_ZFRAGMENT_HPP

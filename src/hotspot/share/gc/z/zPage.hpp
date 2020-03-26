@@ -57,6 +57,8 @@ private:
   bool is_object_strongly_marked(uintptr_t addr) const;
 
 public:
+  size_t attached_old_pages = 0;
+  void inc_attached_old_pages() {attached_old_pages++;};
   ZPage(const ZVirtualMemory& vmem, const ZPhysicalMemory& pmem);
   ZPage(uint8_t type, const ZVirtualMemory& vmem, const ZPhysicalMemory& pmem);
   ~ZPage();

@@ -123,6 +123,10 @@ private:
                      400, std::hash<uintptr_t>(), std::equal_to<uintptr_t>(), map_allocator{a}
   };
 
+  ptr_to_ptr_t object_expected_dest{
+                     400, std::hash<uintptr_t>(), std::equal_to<uintptr_t>(), map_allocator{a}
+  };
+
   size_t heap_min_size() const;
   size_t heap_initial_size() const;
   size_t heap_max_size() const;
@@ -135,6 +139,10 @@ private:
   void fixup_partial_loads();
 
 public:
+  void add_expected(uintptr_t from, uintptr_t to);
+  bool contains_expected(uintptr_t from) const;
+  uintptr_t get_expected(uintptr_t from) const;
+
   void add_remap(uintptr_t from, uintptr_t to);
   uintptr_t get_remap(uintptr_t from) const;
   void remove(uintptr_t from);

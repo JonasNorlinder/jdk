@@ -60,13 +60,13 @@ inline void ZFragmentEntry::set_live_bytes(uint32_t value) {
   _entry = field_live_bytes::encode(value) | (_entry & 0x80000000FFFFFFFF);
 }
 
-inline uint32_t ZFragmentEntry::calc_fragment_live_bytes(ZFragment* fragment, size_t entry_index) const {
+inline uint32_t ZFragmentEntry::calc_fragment_live_bytes(ZFragment* fragment, size_t entry_index, int32_t last_internal_index = -1) const {
   assert(!copied(), "Updating not allowed");
   uint32_t live_bytes = 0;
 
   // Simplest implmentation as possible. NOT EFFICENT
   // TODO: change to count_leading_zeros
-  size_t internal_index = 0;
+  size_t internal_index = last_internal_index + 1;
   while (internal_index < 32) {
     if (get_liveness(internal_index)) {
       uintptr_t offset = fragment->from_offset(entry_index, internal_index);
