@@ -19,7 +19,6 @@ inline ZPage* ZFragment::new_page(uintptr_t offset) const {
 inline bool ZFragment::is_in_page0(uintptr_t offset) const {
   bool result = offset <= _last_obj_page0 || _last_obj_page0 == 0;
   if (result) {
-    assert(offset >= _ops, "");
     assert(_new_page0->is_in(offset), "");
   } else {
     assert(_new_page1 != NULL, "");
