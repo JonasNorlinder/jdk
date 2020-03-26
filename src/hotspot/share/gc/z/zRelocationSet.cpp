@@ -53,7 +53,7 @@ public:
     uintptr_t offset = ZAddress::offset(ZOop::to_address(obj));
     uintptr_t addr = ZAddress::good(offset);
 
-    uintptr_t allocated_obj = (bool) _curr->alloc_object(ZUtils::object_size(addr));
+    uintptr_t allocated_obj = _curr->alloc_object(ZUtils::object_size(addr));
 
     if (allocated_obj) {
       _prev = addr;
