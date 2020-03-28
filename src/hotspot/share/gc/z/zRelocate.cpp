@@ -94,10 +94,11 @@ void ZRelocate::start() {
 }
 
 uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_offset) const {
+  ZHeap* heap = ZHeap::heap();
   // Lookup fragment entry
   ZFragmentEntry* entry = fragment->find(from_offset);
   assert(entry != NULL, "");
-  const uintptr_t to_offset = fragment->to_offset(from_offset, entry);
+  const uintptr_t to_offset = heap->get_expected(from_offset); //fragment->to_offset(from_offset, entry);
 
   if (entry->copied()) {
     // Already relocated, return new address
@@ -125,7 +126,7 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
       break;
     }
     uintptr_t from_offset_entry = fragment->from_offset(offset_index, (size_t)internal_index);
-    uintptr_t to_offset = fragment->to_offset(from_offset_entry, entry);
+    uintptr_t to_offset = heap->get_expected(from_offset_entry);// fragment->to_offset(from_offset_entry, entry);
     size_t size = ZUtils::object_size(ZAddress::good(from_offset_entry));
 
     uintptr_t from_good = ZAddress::good(from_offset_entry);
@@ -154,7 +155,7 @@ uintptr_t ZRelocate::relocate_object(ZFragment* fragment, uintptr_t from_addr) c
   ZFragmentEntry *e = fragment->find(from_offset);
 
   if (e->copied()) {
-    uintptr_t to_good = ZAddress::good(fragment->to_offset(from_offset, e));
+    uintptr_t to_good = ZAddress::good(heap->get_expected(from_offset)); //ZAddress::good(fragment->to_offset(from_offset, e));
     return to_good;
   }
 
@@ -170,7 +171,7 @@ uintptr_t ZRelocate::relocate_object(ZFragment* fragment, uintptr_t from_addr) c
 }
 
 uintptr_t ZRelocate::forward_object(ZFragment* fragment, uintptr_t from_addr) const {
-  uintptr_t to_good = ZAddress::good(fragment->to_offset(ZAddress::offset(from_addr)));
+  uintptr_t to_good = ZAddress::good(ZHeap::heap()->get_expected(ZAddress::offset(from_addr))); //ZAddress::good(fragment->to_offset(ZAddress::offset(from_addr)));
   return to_good;
 }
 

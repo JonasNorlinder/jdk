@@ -143,6 +143,7 @@ uintptr_t ZHeap::get_remap(uintptr_t from) const {
 }
 
 uintptr_t ZHeap::get_expected(uintptr_t from) const {
+  assert(contains_expected(from), "must already exist in map");
   return object_expected_dest.at(from);
 }
 

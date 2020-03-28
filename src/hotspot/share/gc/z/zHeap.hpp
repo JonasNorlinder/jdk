@@ -124,7 +124,7 @@ private:
   };
 
   ptr_to_ptr_t object_expected_dest{
-                     400, std::hash<uintptr_t>(), std::equal_to<uintptr_t>(), map_allocator{a}
+                     30000, std::hash<uintptr_t>(), std::equal_to<uintptr_t>(), map_allocator{a}
   };
 
   size_t heap_min_size() const;

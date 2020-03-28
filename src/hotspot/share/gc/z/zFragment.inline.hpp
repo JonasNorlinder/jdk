@@ -164,6 +164,7 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset) {
 }
 
 inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* entry) {
+  assert(false, "don't use this for now");
   uintptr_t page_base = _ops;
   return
     new_page()->start() +
