@@ -495,6 +495,7 @@ void ZHeap::reset_relocation_set() {
     _fragment_table.remove(fragment);
   }
   object_remaped.clear();
+  object_expected_dest.clear();
   // Reset relocation set
   _relocation_set.reset();
 }
