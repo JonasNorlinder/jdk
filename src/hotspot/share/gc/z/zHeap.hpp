@@ -124,7 +124,7 @@ private:
   };
 
   ptr_to_ptr_t object_expected_dest{
-                     30000, std::hash<uintptr_t>(), std::equal_to<uintptr_t>(), map_allocator{a}
+                     3000, std::hash<uintptr_t>(), std::equal_to<uintptr_t>(), map_allocator{a}
   };
 
   size_t heap_min_size() const;
@@ -190,7 +190,7 @@ public:
   void process_non_strong_references();
 
   // Page allocation
-  ZPage* alloc_page(uint8_t type, size_t size, ZAllocationFlags flags, bool f);
+  ZPage* alloc_page(uint8_t type, size_t size, ZAllocationFlags flags);
   void undo_alloc_page(ZPage* page);
   void free_page(ZPage* page, bool reclaimed);
 

@@ -85,15 +85,19 @@ void ZRelocationSet::populate(ZPage* const* group0, size_t ngroup0,
   // Populate group 0 (medium)
   for (size_t i = 0; i < ngroup0; i++) {
     ZPage* old_page = group0[i];
-     ZPage* new_page = ZHeap::heap()->alloc_page(old_page->type(), old_page->size(), flags, true /* don't change top */);
-    new_page->set_top(old_page->live_bytes());
-    _fragments[j++] = ZFragment::create(old_page, new_page);
+     ZPage* new_page = ZHeap::heap()->alloc_page(old_page->type(), old_page->size(), flags);
+
+     ZFragment* fragment = ZFragment::create(old_page, new_page);
+     ZLiveMapIterator cl = ZLiveMapIterator(fragment, flags);
+     old_page->_livemap.iterate(&cl, ZAddress::good(old_page->start()), old_page->object_alignment_shift());
+
+    _fragments[j++] = fragment;
   }
 
   // Populate group 1 (small)
   for (size_t i = 0; i < ngroup1; i++) {
     ZPage* old_page = group1[i];
-    ZPage* new_page = ZHeap::heap()->alloc_page(old_page->type(), old_page->size(), flags, false);
+    ZPage* new_page = ZHeap::heap()->alloc_page(old_page->type(), old_page->size(), flags);
 
     ZFragment* fragment = ZFragment::create(old_page, new_page);
    ZLiveMapIterator cl = ZLiveMapIterator(fragment, flags);

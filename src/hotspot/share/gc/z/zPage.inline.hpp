@@ -231,7 +231,6 @@ inline void ZPage::object_iterate(ObjectClosure* cl) {
 
 inline uintptr_t ZPage::alloc_object(size_t size) {
   assert(is_allocating(), "Invalid state");
-  assert(!_const_top, "don't touch top");
   const size_t aligned_size = align_up(size, object_alignment());
   const uintptr_t addr = top();
   const uintptr_t new_top = addr + aligned_size;
@@ -248,7 +247,6 @@ inline uintptr_t ZPage::alloc_object(size_t size) {
 
 inline uintptr_t ZPage::alloc_object_atomic(size_t size) {
   assert(is_allocating(), "Invalid state");
-  assert(!_const_top, "don't touch top");
   const size_t aligned_size = align_up(size, object_alignment());
   uintptr_t addr = top();
 
