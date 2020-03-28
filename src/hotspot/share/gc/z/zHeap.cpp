@@ -79,6 +79,33 @@ ZHeap::ZHeap() :
   ZStatHeap::set_at_initialize(heap_min_size(), heap_max_size(), heap_max_reserve_size());
 }
 
+bool ZHeap::contains_expected(uintptr_t from) const {
+  return object_expected_dest.count(from) == 1;
+}
+
+void ZHeap::add_expected(uintptr_t from, uintptr_t to) {
+if (contains_expected(from) || contains_expected(to)) {
+    if (!(contains_expected(from) && contains_expected(to)) ||
+        !(get_expected(from) == to) ||
+        !(get_expected(to) == from)) {
+      uintptr_t f = contains_expected(from) ? get_expected(from) : 0;
+      uintptr_t t = contains_expected(to) ? get_expected(to) : 0;
+
+      std::cout << "from = " << std::hex << from << std::endl;
+      std::cout << "to = " << std::hex << to << std::endl;
+
+      std::cout << "get_expected(from) = " << std::hex << f << std::endl;
+      std::cout << "get_expected(to) = " << std::hex << t << std::endl;
+    }
+    assert(contains_expected(from) && contains_expected(to), "should already exist in both directions");
+    assert(get_expected(from) == to, "should be the same");
+    assert(get_expected(to) == from, "should be the same");
+    return;
+  }
+  object_expected_dest[from] = to;
+  object_expected_dest[to] = from;
+
+}
 
 void ZHeap::add_remap(uintptr_t from, uintptr_t to) {
   if (contains(from) || contains(to)) {
@@ -113,6 +140,10 @@ bool ZHeap::contains(uintptr_t from) const {
 
 uintptr_t ZHeap::get_remap(uintptr_t from) const {
   return object_remaped.at(from);
+}
+
+uintptr_t ZHeap::get_expected(uintptr_t from) const {
+  return object_expected_dest.at(from);
 }
 
 size_t ZHeap::heap_min_size() const {
