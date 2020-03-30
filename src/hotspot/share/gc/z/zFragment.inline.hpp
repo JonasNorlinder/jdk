@@ -174,30 +174,28 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* ent
 
 	uintptr_t r = new_page(from_offset)->start() + entry->get_live_bytes() + entry->count_live_objects(_ops, from_offset, this);
 
-	std::cerr
-		<< std::hex
-		<< " (a) "
-		<< new_page(from_offset)->start()
-		<< " (b) "
-		<< entry->get_live_bytes() 
-		<< " (c) "
-		<< entry->count_live_objects(_ops, from_offset, this)
-		<< " (d) "
-		<< _new_page->start()
-		<< " (e) "
-		<< (_snd_page ? _snd_page->start() : 0)
-		<< " (f) "
-		<< r
-		<< " (g) "
-		<< h->get_expected(from_offset)
-		<< "\n";
+        if (h->get_expected(from_offset) != r) {
+          std::cerr << std::hex << " (a) " << new_page(from_offset)->start()
+                    << " (b) " << entry->get_live_bytes() << " (c) "
+                    << entry->count_live_objects(_ops, from_offset, this)
+                    << " (d) " << _new_page->start() << " (e) "
+                    << (_snd_page ? _snd_page->start() : 0) << " (f) " << r
+                    << " (g) " << h->get_expected(from_offset) << "\n";
 
-	if (h->get_expected(from_offset) != r) {
-		assert(false, "boom");
-	}
+          std::cerr
+              << "(a) = new_page(from_offset)->start()}\n"
+              << "(b) = entry->get_live_bytes()\n"
+              << "(c) = entry->count_live_objects(_ops, from_offset, this)\n"
+              << "(d) = _new_page->start()\n"
+              << "(e) = _snd_page->start()\n"
+              << "(f) = our\n"
+              << "(g) = expected\n";
 
-	h->global_lock.unlock();
-	
+              assert(false, "boom");
+        }
+
+        h->global_lock.unlock();
+
   return
     new_page(from_offset)->start() +
     entry->get_live_bytes() +
