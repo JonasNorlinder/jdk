@@ -126,6 +126,7 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
       break;
     }
     uintptr_t from_offset_entry = fragment->from_offset(offset_index, (size_t)internal_index);
+
     uintptr_t to_offset = heap->get_expected(from_offset_entry);// fragment->to_offset(from_offset_entry, entry);
     size_t size = ZUtils::object_size(ZAddress::good(from_offset_entry));
 
@@ -138,7 +139,7 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
     heap->global_lock.unlock();
 
 
-    assert(fragment->new_page()->is_in(to_good), "");
+    // assert(fragment->new_page()->is_in(to_good), "");
     ZUtils::object_copy(from_good,
                         to_good,
                         size);

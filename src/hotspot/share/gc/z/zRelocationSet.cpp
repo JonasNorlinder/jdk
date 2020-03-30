@@ -32,36 +32,47 @@ class ZLiveMapIterator : public ObjectClosure {
 private:
   ZHeap* _heap;
   ZFragment* _fragment;
-  ZPage *_curr;
+  ZPage *_current_page;
   ZAllocationFlags _flags;
-  size_t _live;
+	ZFragmentEntry *_current_entry;
 
 public:
-  ZLiveMapIterator(ZFragment* fragment, ZAllocationFlags flags) :
+  ZLiveMapIterator(ZFragment* fragment, ZPage* new_page, ZAllocationFlags flags) :
     _heap(ZHeap::heap()),
     _fragment(fragment),
-    _curr(fragment->new_page()),
+    _current_page(new_page),
     _flags(flags),
-    _live(0)
+		_current_entry(fragment->entries_begin())
   {}
 
+  ZPage *current_page() const {
+		return _current_page;
+	}
+
   virtual void do_object(oop obj) {
-    uintptr_t offset = ZAddress::offset(ZOop::to_address(obj));
-    uintptr_t addr = ZAddress::good(offset);
-
+    uintptr_t from_offset = ZAddress::offset(ZOop::to_address(obj));
+    uintptr_t addr = ZAddress::good(from_offset);
     size_t obj_size = ZUtils::object_size(addr);
-    uintptr_t allocated_obj = _curr->alloc_object(obj_size);
-    ZFragmentEntry *e = _fragment->find(offset);
 
-    if (allocated_obj) {
-      _live += obj_size;
-      e->set_live_bytes(_live);
-    } else {
-      assert(false, "overlapping not supported yet");
-    }
+		ZFragmentEntry* entry_for_offset = _fragment->find(from_offset);
 
+		if (_current_entry < entry_for_offset) {
+		  entry_for_offset->set_live_bytes(_current_page->top());
+			_current_entry = entry_for_offset;
+		}
+
+		/// Try to allocate on current page
+		uintptr_t allocated_obj = _current_page->alloc_object(obj_size);
+
+		/// If _current_page was full 
+		if (allocated_obj == 0) {
+			_current_page = ZHeap::heap()->alloc_page(_current_page->type(), _current_page->size(), _flags);
+			allocated_obj = _current_page->alloc_object(obj_size);
+			_fragment->add_page_break(_current_page, from_offset);
+		}
+		
     _heap->global_lock.lock();
-    _heap->add_expected(offset, ZAddress::offset(allocated_obj));
+    _heap->add_expected(from_offset, ZAddress::offset(allocated_obj));
     _heap->global_lock.unlock();
   }
 };
@@ -83,26 +94,28 @@ void ZRelocationSet::populate(ZPage* const* group0, size_t ngroup0,
   flags.set_worker_thread();
 
   // Populate group 0 (medium)
+	/// FIXME: copy code from group 1 here
   for (size_t i = 0; i < ngroup0; i++) {
     ZPage* old_page = group0[i];
      ZPage* new_page = ZHeap::heap()->alloc_page(old_page->type(), old_page->size(), flags);
 
      ZFragment* fragment = ZFragment::create(old_page, new_page);
-     ZLiveMapIterator cl = ZLiveMapIterator(fragment, flags);
+     ZLiveMapIterator cl = ZLiveMapIterator(fragment, new_page, flags);
      old_page->_livemap.iterate(&cl, ZAddress::good(old_page->start()), old_page->object_alignment_shift());
 
     _fragments[j++] = fragment;
   }
 
   // Populate group 1 (small)
+	ZPage* current_new_page = ngroup1 > 0 ? ZHeap::heap()->alloc_page(group1[0]->type(), group1[0]->size(), flags) : NULL;
   for (size_t i = 0; i < ngroup1; i++) {
     ZPage* old_page = group1[i];
-    ZPage* new_page = ZHeap::heap()->alloc_page(old_page->type(), old_page->size(), flags);
+    ZFragment* fragment = ZFragment::create(old_page, current_new_page);
 
-    ZFragment* fragment = ZFragment::create(old_page, new_page);
-   ZLiveMapIterator cl = ZLiveMapIterator(fragment, flags);
+		ZLiveMapIterator cl = ZLiveMapIterator(fragment, current_new_page, flags);
     old_page->_livemap.iterate(&cl, ZAddress::good(old_page->start()), old_page->object_alignment_shift());
-
+		current_new_page = cl.current_page();
+		
     _fragments[j++] = fragment;
   }
 }
