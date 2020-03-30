@@ -139,6 +139,7 @@ private:
   void fixup_partial_loads();
 
 public:
+  void update_expected(uintptr_t from, uintptr_t to);
   void add_expected(uintptr_t from, uintptr_t to);
   bool contains_expected(uintptr_t from) const;
   uintptr_t get_expected(uintptr_t from) const;

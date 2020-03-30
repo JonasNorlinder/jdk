@@ -116,6 +116,7 @@ inline uintptr_t ZFragment::page_index(uintptr_t from_offset) {
 
 inline void ZFragment::calc_fragments_live_bytes() {
   // TODO: add assert here about which ZGC state we are in.
+	assert(false, "We are not using this anymore");
   ZFragmentEntry* p = entries_begin();
   const ZFragmentEntry* end = entries_end();
   uint32_t accumulated_live_bytes = 0;
@@ -168,35 +169,41 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset) {
 }
 
 inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* entry) {
-	ZHeap *h = ZHeap::heap();
 
-	h->global_lock.lock();
 
 	uintptr_t r = new_page(from_offset)->start() + entry->get_live_bytes() + entry->count_live_objects(_ops, from_offset, this);
 
-	std::cerr
-		<< std::hex
-		<< " (a) "
-		<< new_page(from_offset)->start()
-		<< " (b) "
-		<< entry->get_live_bytes() 
-		<< " (c) "
-		<< entry->count_live_objects(_ops, from_offset, this)
-		<< " (d) "
-		<< _new_page->start()
-		<< " (e) "
-		<< (_snd_page ? _snd_page->start() : 0)
-		<< " (f) "
-		<< r
-		<< " (g) "
-		<< h->get_expected(from_offset)
-		<< "\n";
-
+	ZHeap *h = ZHeap::heap();
 	if (h->get_expected(from_offset) != r) {
+		h->global_lock.lock();
+
+		std::cerr
+			<< std::hex
+			<< " (a) "
+			<< new_page(from_offset)->start()
+			<< " (b) "
+			<< entry->get_live_bytes() 
+			<< " (c) "
+			<< entry->count_live_objects(_ops, from_offset, this)
+			<< " (d) "
+			<< _new_page->start()
+			<< " (e) "
+			<< (_snd_page ? _snd_page->start() : -1)
+			<< " (f) "
+			<< r
+			<< " (g) "
+			<< h->get_expected(from_offset)
+			<< " (h) "
+			<< entry - entries_begin()
+			<< " (i) "
+			<< from_offset	
+			<< " (j) "
+			<< entry->fragment_internal_index(_ops, from_offset)
+			<< "\n";
+		h->global_lock.unlock();
 		assert(false, "boom");
 	}
 
-	h->global_lock.unlock();
 	
   return
     new_page(from_offset)->start() +

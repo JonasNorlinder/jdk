@@ -107,6 +107,11 @@ if (contains_expected(from) || contains_expected(to)) {
 
 }
 
+void ZHeap::update_expected(uintptr_t from, uintptr_t to) {
+  object_expected_dest[from] = to;
+  object_expected_dest[to] = from;
+}
+
 void ZHeap::add_remap(uintptr_t from, uintptr_t to) {
   if (contains(from) || contains(to)) {
     if (!(contains(from) && contains(to)) ||
