@@ -183,6 +183,7 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* ent
                     << " (g) " << h->get_expected(from_offset) << "\n";
 
           std::cerr
+              << "entry_index = " << this->offset_to_index(from_offset) << "\n"
               << "(a) = new_page(from_offset)->start()}\n"
               << "(b) = entry->get_live_bytes()\n"
               << "(c) = entry->count_live_objects(_ops, from_offset, this)\n"

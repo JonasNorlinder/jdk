@@ -55,9 +55,8 @@ public:
     size_t obj_size = ZUtils::object_size(addr);
 
     ZFragmentEntry* entry_for_offset = _fragment->find(from_offset);
-
     if (_current_entry < entry_for_offset) {
-      entry_for_offset->set_live_bytes(_current_page->top());
+      entry_for_offset->set_live_bytes(_current_page->top() - _current_page->start());
       _current_entry = entry_for_offset;
     }
 
