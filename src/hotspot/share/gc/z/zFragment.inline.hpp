@@ -114,18 +114,6 @@ inline uintptr_t ZFragment::page_index(uintptr_t from_offset) {
   return (from_offset - _ops) / 8;
 }
 
-inline void ZFragment::calc_fragments_live_bytes() {
-  // TODO: add assert here about which ZGC state we are in.
-  assert(false, "We are not using this anymore");
-  ZFragmentEntry* p = entries_begin();
-  const ZFragmentEntry* end = entries_end();
-  uint32_t accumulated_live_bytes = 0;
-  for (size_t i = 0; p < end; p++, i++) {
-    p->set_live_bytes(accumulated_live_bytes);
-    accumulated_live_bytes += p->calc_fragment_live_bytes(this, i);
-  }
-}
-
 inline void ZFragment::fill_entires() {
   size_t nsegments = old_page()->_livemap.nsegments;
 
