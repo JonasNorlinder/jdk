@@ -17,9 +17,9 @@ inline void ZFragment::set_new_page(ZPage* page) {
 
 inline ZPage* ZFragment::new_page(uintptr_t from_offset) const {
   if (_snd_page && from_offset >= _first_from_offset_mapped_to_snd_page) {
-		return _snd_page;
+    return _snd_page;
   } else {
-		return _new_page;
+    return _new_page;
   }
 }
 
@@ -116,7 +116,7 @@ inline uintptr_t ZFragment::page_index(uintptr_t from_offset) {
 
 inline void ZFragment::calc_fragments_live_bytes() {
   // TODO: add assert here about which ZGC state we are in.
-	assert(false, "We are not using this anymore");
+  assert(false, "We are not using this anymore");
   ZFragmentEntry* p = entries_begin();
   const ZFragmentEntry* end = entries_end();
   uint32_t accumulated_live_bytes = 0;
@@ -171,40 +171,40 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset) {
 inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* entry) {
 
 
-	uintptr_t r = new_page(from_offset)->start() + entry->get_live_bytes() + entry->count_live_objects(_ops, from_offset, this);
+  uintptr_t r = new_page(from_offset)->start() + entry->get_live_bytes() + entry->count_live_objects(_ops, from_offset, this);
 
-	ZHeap *h = ZHeap::heap();
-	if (h->get_expected(from_offset) != r) {
-		h->global_lock.lock();
+  ZHeap *h = ZHeap::heap();
+  if (h->get_expected(from_offset) != r) {
+    h->global_lock.lock();
 
-		std::cerr
-			<< std::hex
-			<< " (a) "
-			<< new_page(from_offset)->start()
-			<< " (b) "
-			<< entry->get_live_bytes() 
-			<< " (c) "
-			<< entry->count_live_objects(_ops, from_offset, this)
-			<< " (d) "
-			<< _new_page->start()
-			<< " (e) "
-			<< (_snd_page ? _snd_page->start() : -1)
-			<< " (f) "
-			<< r
-			<< " (g) "
-			<< h->get_expected(from_offset)
-			<< " (h) "
-			<< entry - entries_begin()
-			<< " (i) "
-			<< from_offset	
-			<< " (j) "
-			<< entry->fragment_internal_index(_ops, from_offset)
-			<< "\n";
-		h->global_lock.unlock();
-		assert(false, "boom");
-	}
+    std::cerr
+      << std::hex
+      << " (a) "
+      << new_page(from_offset)->start()
+      << " (b) "
+      << entry->get_live_bytes()
+      << " (c) "
+      << entry->count_live_objects(_ops, from_offset, this)
+      << " (d) "
+      << _new_page->start()
+      << " (e) "
+      << (_snd_page ? _snd_page->start() : -1)
+      << " (f) "
+      << r
+      << " (g) "
+      << h->get_expected(from_offset)
+      << " (h) "
+      << entry - entries_begin()
+      << " (i) "
+      << from_offset
+      << " (j) "
+      << entry->fragment_internal_index(_ops, from_offset)
+      << "\n";
+    h->global_lock.unlock();
+    assert(false, "boom");
+  }
 
-	
+
   return
     new_page(from_offset)->start() +
     entry->get_live_bytes() +
@@ -212,8 +212,8 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* ent
 }
 
 inline void ZFragment::add_page_break(ZPage *snd_page, uintptr_t first_on_snd) {
-	_snd_page = snd_page;
-	_first_from_offset_mapped_to_snd_page = first_on_snd;
+  _snd_page = snd_page;
+  _first_from_offset_mapped_to_snd_page = first_on_snd;
 }
 
 
