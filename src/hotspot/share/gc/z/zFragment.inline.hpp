@@ -124,7 +124,7 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* ent
   uintptr_t r = new_page(from_offset)->start() + entry->get_live_bytes() + entry->count_live_objects(_ops, from_offset, this);
 
   ZHeap *h = ZHeap::heap();
-  if (h->get_expected(from_offset) != r) {
+  if (false && h->get_expected(from_offset) != r) {
     h->global_lock.lock();
 
     std::cerr
