@@ -20,10 +20,12 @@ private:
   const uintptr_t _ops; // FIXME: rename
   const ZVirtualMemory    _old_virtual;
   ZPage*                  _new_page;
+  ZPage*                  _snd_page;
   volatile uint32_t       _refcount;
   volatile bool           _pinned;
   uint64_t                _conversion_constant;
-
+	uintptr_t _first_from_offset_mapped_to_snd_page;
+	
   bool inc_refcount();
   bool dec_refcount();
 
@@ -36,7 +38,7 @@ public:
   const uintptr_t old_start();
   const size_t old_size();
   ZPage* old_page() const;
-  ZPage* new_page() const;
+  ZPage* new_page(uintptr_t from_offset) const;
   void set_new_page(ZPage* page);
   void fill_entires();
 
@@ -61,6 +63,8 @@ public:
   ZSizeEntry* size_entries_begin() const;
 
   void calc_fragments_live_bytes();
+
+	void add_page_break(ZPage *snd_page, uintptr_t first_on_snd);
 };
 
 #endif // SHARE_GC_Z_ZFRAGMENT_HPP
