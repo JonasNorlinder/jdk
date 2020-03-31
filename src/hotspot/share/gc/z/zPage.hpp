@@ -35,7 +35,7 @@ class ZPage : public CHeapObj<mtGC> {
   friend class VMStructs;
   friend class ZList<ZPage>;
   friend class ZFragment;
-
+  friend class ZRelocationSet;
 private:
   uint8_t            _type;
   uint8_t            _numa_id;
@@ -59,7 +59,6 @@ public:
   ZPage(const ZVirtualMemory& vmem, const ZPhysicalMemory& pmem);
   ZPage(uint8_t type, const ZVirtualMemory& vmem, const ZPhysicalMemory& pmem);
   ~ZPage();
-  bool _const_top = false;
 
   uint32_t object_max_count() const;
   size_t object_alignment_shift() const;

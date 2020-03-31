@@ -14,6 +14,7 @@ ZFragment::ZFragment(ZPage* old_page, ZPage* new_page, size_t nentries, size_t n
     _ops(old_page->start()),
     _old_virtual(old_page->virtual_memory()),
     _new_page(new_page),
+    _snd_page(NULL),
     _refcount(1),
     _pinned(false) {
   assert(old_page != NULL, "");
@@ -48,3 +49,4 @@ ZFragment* ZFragment::create(ZPage* old_page, ZPage* new_page) {
 void ZFragment::destroy(ZFragment* fragment) {
   AttachedArray::free(fragment);
 }
+
