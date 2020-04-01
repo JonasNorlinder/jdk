@@ -27,11 +27,11 @@ public:
     ZFragmentEntry* entry_for_offset = _fragment->find(from_offset);
 
     size_t internal_index = _fragment->offset_to_internal_index(from_offset);
-    //entry_for_offset->set_liveness(internal_index);
+    entry_for_offset->set_liveness(internal_index);
 
     size_t p_index = _fragment->page_index(from_offset);
     ZSizeEntry* size_entry = _fragment->size_entries_begin() + p_index;
-    //size_entry->entry = obj_size;
+    size_entry->entry = obj_size;
   }
 };
 
@@ -46,9 +46,9 @@ void ZFragmentTable::insert(ZFragment* fragment) {
   _map.put(offset, size, fragment);
   assert(_map.get(offset) == fragment, "");
 
-  //ZPageFragmentLiveMapIterator cl = ZPageFragmentLiveMapIterator(fragment);
-  //fragment->old_page()->_livemap.iterate(&cl, ZAddress::good(fragment->old_page()->start()), fragment->old_page()->object_alignment_shift()); // doesn't work
-  size_t i = fragment->fill_entires(); // works
+  ZPageFragmentLiveMapIterator cl = ZPageFragmentLiveMapIterator(fragment);
+  fragment->old_page()->_livemap.iterate(&cl, ZAddress::good(fragment->old_page()->start()), fragment->old_page()->object_alignment_shift()); // doesn't work
+  //size_t i = fragment->fill_entires(); // works
   //assert(cl.get_i() == i, "same");
 }
 
