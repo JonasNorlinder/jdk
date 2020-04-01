@@ -15,8 +15,7 @@ ZFragment::ZFragment(ZPage* old_page, ZPage* new_page, size_t nentries, size_t n
     _old_virtual(old_page->virtual_memory()),
     _new_page(new_page),
     _snd_page(NULL),
-    _refcount(1),
-    _pinned(false) {
+    _refcount(1) {
   assert(old_page != NULL, "");
 
   for (ZSizeEntry* e = size_entries_begin(); e < size_entries_begin() + n_sizeentries; e= e + 1) {

@@ -84,14 +84,6 @@ inline void ZFragment::release_page() {
   }
 }
 
-inline bool ZFragment::is_pinned() const {
-  return Atomic::load(&_pinned);
-}
-
-inline void ZFragment::set_pinned() {
-  Atomic::store(&_pinned, true);
-}
-
 inline size_t ZFragment::offset_to_index(uintptr_t from_offset) const {
   return (from_offset - _ops) / 256;
 }
@@ -119,40 +111,6 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset) {
 }
 
 inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* entry) {
-  uintptr_t r = new_page(from_offset)->start() + entry->get_live_bytes() + entry->count_live_objects(_ops, from_offset, this);
-
-  ZHeap *h = ZHeap::heap();
-  if (false && h->get_expected(from_offset) != r) {
-    h->global_lock.lock();
-
-    std::cerr
-      << std::hex
-      << " (a) "
-      << new_page(from_offset)->start()
-      << " (b) "
-      << entry->get_live_bytes()
-      << " (c) "
-      << entry->count_live_objects(_ops, from_offset, this)
-      << " (d) "
-      << _new_page->start()
-      << " (e) "
-      << (_snd_page ? _snd_page->start() : -1)
-      << " (f) "
-      << r
-      << " (g) "
-      << h->get_expected(from_offset)
-      << " (h) "
-      << entry - entries_begin()
-      << " (i) "
-      << from_offset
-      << " (j) "
-      << entry->fragment_internal_index(_ops, from_offset)
-      << "\n";
-    h->global_lock.unlock();
-    assert(false, "boom");
-  }
-
-
   return
     new_page(from_offset)->start() +
     entry->get_live_bytes() +
@@ -162,47 +120,6 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* ent
 inline void ZFragment::add_page_break(ZPage *snd_page, uintptr_t first_on_snd) {
   _snd_page = snd_page;
   _first_from_offset_mapped_to_snd_page = first_on_snd;
-}
-
-inline size_t ZFragment::fill_entires() {
-  size_t i = 0;
-  size_t nsegments = old_page()->_livemap.nsegments;
-
-  for (BitMap::idx_t segment = old_page()->_livemap.first_live_segment(); segment < nsegments; segment = old_page()->_livemap.next_live_segment(segment)) {
-    // For each live segment
-    const BitMap::idx_t start_index = old_page()->_livemap.segment_start(segment);
-    const BitMap::idx_t end_index   = old_page()->_livemap.segment_end(segment);
-    BitMap::idx_t index = old_page()->_livemap._bitmap.get_next_one_offset(start_index, end_index);
-
-    while (index < end_index) {
-      // Calculate object address
-      const uintptr_t offset = _ops + ((index / 2) << old_page()->object_alignment_shift());
-      const uintptr_t addr = ZAddress::good(offset);
-
-      // Apply closure
-      i++;
-      ZFragmentEntry* entry = find(offset);
-      size_t internal_index = offset_to_internal_index(offset);
-      entry->set_liveness(internal_index);
-
-      const size_t size = ZUtils::object_size(addr);
-      size_t p_index = page_index(offset);
-      assert(p_index < old_page()->size()/8, "");
-      ZSizeEntry* size_entry = size_entries_begin() + p_index;
-      size_entry->entry = size;
-
-      // Find next bit after this object
-      const uintptr_t next_addr = align_up(addr + size, 1 << old_page()->object_alignment_shift());
-      const BitMap::idx_t next_index = ((next_addr - ZAddress::good(_ops)) >> old_page()->object_alignment_shift()) * 2;
-      if (next_index >= end_index) {
-        // End of live map
-        break;
-      }
-
-      index = old_page()->_livemap._bitmap.get_next_one_offset(next_index, end_index);
-    }
-  }
-  return i;
 }
 
 #endif // SHARE_GC_Z_ZFRAGMENT_INLINE_HPP

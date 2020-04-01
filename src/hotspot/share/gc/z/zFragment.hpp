@@ -17,12 +17,11 @@ private:
   const AttachedArray     _entries;
   const size_t            _object_alignment_shift;
   ZPage*                  _old_page;
-  const uintptr_t         _ops; // FIXME: rename
+  const uintptr_t         _ops;
   const ZVirtualMemory    _old_virtual;
   ZPage*                  _new_page;
   ZPage*                  _snd_page;
   volatile uint32_t       _refcount;
-  volatile bool           _pinned;
   uint64_t                _conversion_constant;
   uintptr_t               _first_from_offset_mapped_to_snd_page;
 
@@ -40,7 +39,6 @@ public:
   ZPage* old_page() const;
   ZPage* new_page(uintptr_t from_offset) const;
   void set_new_page(ZPage* page);
-  size_t fill_entires();
 
   ZFragmentEntry* find(uintptr_t from_addr) const;
   uintptr_t to_offset(uintptr_t from_offset);
@@ -48,9 +46,6 @@ public:
   uintptr_t from_offset(size_t entry_index, size_t internal_index) const;
   size_t offset_to_index(uintptr_t from_offset) const;
   size_t offset_to_internal_index(uintptr_t from_offset) const;
-
-  bool is_pinned() const;
-  void set_pinned();
 
   bool retain_page();
   void release_page();

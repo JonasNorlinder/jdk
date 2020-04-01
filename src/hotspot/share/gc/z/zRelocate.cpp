@@ -133,11 +133,6 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
     uintptr_t from_good = ZAddress::good(from_offset_entry);
     uintptr_t to_good = ZAddress::good(to_offset);
 
-    ZHeap* heap = ZHeap::heap();
-    heap->global_lock.lock();
-    heap->add_remap(from_good, to_good);
-    heap->global_lock.unlock();
-
     ZUtils::object_copy(from_good,
                         to_good,
                         size);
@@ -163,7 +158,6 @@ uintptr_t ZRelocate::relocate_object(ZFragment* fragment, uintptr_t from_addr) c
   if (from_offset == to_offset) {
     // In-place forwarding, pin page
     assert(false, "not supported yet");
-    fragment->set_pinned();
   }
   uintptr_t to_good = ZAddress::good(to_offset);
   return to_good;
@@ -198,13 +192,8 @@ bool ZRelocate::work(ZRelocationSetParallelIterator* iter) {
     ZRelocateObjectClosure cl(this, fragment);
     fragment->old_page()->object_iterate(&cl);
 
-    if (fragment->is_pinned()) {
-      // Relocation failed, page is now pinned
-      success = false;
-    } else {
-      // Relocation succeeded, release page
-      fragment->release_page();
-    }
+    // Relocation succeeded, release page
+    fragment->release_page();
   }
 
   return success;
