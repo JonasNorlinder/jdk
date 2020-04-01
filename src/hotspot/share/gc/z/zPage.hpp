@@ -36,6 +36,7 @@ class ZPage : public CHeapObj<mtGC> {
   friend class ZList<ZPage>;
   friend class ZFragment;
   friend class ZRelocationSet;
+  friend class ZFragmentTable;
 private:
   uint8_t            _type;
   uint8_t            _numa_id;

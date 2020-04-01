@@ -14,8 +14,6 @@ void ZFragmentTable::insert(ZFragment* fragment) {
   assert(_map.get(offset) == NULL, "Invalid entry");
   _map.put(offset, size, fragment);
   assert(_map.get(offset) == fragment, "");
-  fragment->fill_entires();
-  // fragment->calc_fragments_live_bytes();
 }
 
 void ZFragmentTable::remove(ZFragment* fragment) {
