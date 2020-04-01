@@ -42,11 +42,9 @@ ZFragment* ZFragment::create(ZPage* old_page, ZPage* new_page) {
 
   fragment->_conversion_constant = (old_page->start() >> 5);
 
-
   return fragment;
 }
 
 void ZFragment::destroy(ZFragment* fragment) {
   AttachedArray::free(fragment);
 }
-

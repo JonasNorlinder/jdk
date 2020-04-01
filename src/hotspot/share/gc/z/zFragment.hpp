@@ -40,6 +40,7 @@ public:
   ZPage* old_page() const;
   ZPage* new_page(uintptr_t from_offset) const;
   void set_new_page(ZPage* page);
+  size_t fill_entires();
 
   ZFragmentEntry* find(uintptr_t from_addr) const;
   uintptr_t to_offset(uintptr_t from_offset);

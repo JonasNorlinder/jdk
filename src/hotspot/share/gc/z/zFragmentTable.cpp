@@ -8,23 +8,30 @@
 class ZPageFragmentLiveMapIterator : public ObjectClosure {
 private:
   ZFragment* _fragment;
-
+  ZFragmentEntry *_current_entry;
+  size_t _live_bytes;
+  size_t _i;
 public:
   ZPageFragmentLiveMapIterator(ZFragment* fragment) :
-    _fragment(fragment) {
+    _fragment(fragment),
+    _current_entry(fragment->entries_begin()),
+    _i(0) {
   }
 
+  size_t get_i() {return _i;}
+
   virtual void do_object(oop obj) {
+    _i++;
     uintptr_t from_offset = ZAddress::offset(ZOop::to_address(obj));
     size_t obj_size = ZUtils::object_size(ZAddress::good(from_offset));
-
     ZFragmentEntry* entry_for_offset = _fragment->find(from_offset);
+
     size_t internal_index = _fragment->offset_to_internal_index(from_offset);
-    entry_for_offset->set_liveness(internal_index);
+    //entry_for_offset->set_liveness(internal_index);
 
     size_t p_index = _fragment->page_index(from_offset);
     ZSizeEntry* size_entry = _fragment->size_entries_begin() + p_index;
-    size_entry->entry = obj_size;
+    //size_entry->entry = obj_size;
   }
 };
 
@@ -39,9 +46,10 @@ void ZFragmentTable::insert(ZFragment* fragment) {
   _map.put(offset, size, fragment);
   assert(_map.get(offset) == fragment, "");
 
-  ZPageFragmentLiveMapIterator cl = ZPageFragmentLiveMapIterator(fragment);
-  fragment->old_page()->_livemap.iterate(&cl, ZAddress::good(fragment->old_page()->start()), fragment->old_page()->object_alignment_shift());
-
+  //ZPageFragmentLiveMapIterator cl = ZPageFragmentLiveMapIterator(fragment);
+  //fragment->old_page()->_livemap.iterate(&cl, ZAddress::good(fragment->old_page()->start()), fragment->old_page()->object_alignment_shift()); // doesn't work
+  size_t i = fragment->fill_entires(); // works
+  //assert(cl.get_i() == i, "same");
 }
 
 void ZFragmentTable::remove(ZFragment* fragment) {
