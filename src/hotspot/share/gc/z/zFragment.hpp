@@ -10,6 +10,8 @@ class ZPage;
 
 class ZFragment {
   friend class ZFragmentEntry;
+  friend class ZRelocate;
+
 private:
   typedef ZAttachedArray<ZFragment, ZFragmentEntry> AttachedArray;
   typedef ZAttachedArray<AttachedArray, ZSizeEntry> SizeAttachedArray;

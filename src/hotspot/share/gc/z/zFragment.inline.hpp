@@ -123,12 +123,11 @@ inline bool ZFragment::is_on_snd_page(uintptr_t from_offset) const {
 }
 
 inline bool ZFragment::is_on_page_break(ZFragmentEntry *entry) {
-  return entry ==
-    (entries_begin() + _page_break_entry_index) && _snd_page;
+  return (entry == entries_begin() + _page_break_entry_index) && _snd_page;
 }
 
 inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* entry) {
-  size_t live_bytes_before_fragment = is_on_page_break(entry) ?
+  size_t live_bytes_before_fragment = is_on_page_break(entry) && is_on_snd_page(from_offset) ?
     0 : entry->live_bytes_before_fragment();
 
   return
