@@ -10,6 +10,8 @@ class ZPage;
 
 class ZFragment {
   friend class ZFragmentEntry;
+  friend class ZRelocate;
+
 private:
   typedef ZAttachedArray<ZFragment, ZFragmentEntry> AttachedArray;
   typedef ZAttachedArray<AttachedArray, ZSizeEntry> SizeAttachedArray;
@@ -24,6 +26,8 @@ private:
   volatile uint32_t       _refcount;
   uint64_t                _conversion_constant;
   uintptr_t               _first_from_offset_mapped_to_snd_page;
+  size_t                  _page_break_entry_index;
+  size_t                  _page_break_entry_internal_index;
 
   bool inc_refcount();
   bool dec_refcount();
@@ -46,6 +50,11 @@ public:
   uintptr_t from_offset(size_t entry_index, size_t internal_index) const;
   size_t offset_to_index(uintptr_t from_offset) const;
   size_t offset_to_internal_index(uintptr_t from_offset) const;
+
+  bool is_on_page_break(ZFragmentEntry *entry);
+  bool is_on_snd_page(uintptr_t from_offset) const;
+  size_t page_break_entry_index() const;
+  size_t page_break_entry_internal_index() const;
 
   bool retain_page();
   void release_page();

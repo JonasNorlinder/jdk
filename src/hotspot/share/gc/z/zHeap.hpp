@@ -42,6 +42,59 @@
 
 class ThreadClosure;
 
+// -- custom allocator for now begin --
+#include <unordered_map>
+#include <vector>
+using namespace std;
+class MyArena {
+public:
+  void *allocate(size_t s) {
+    return malloc(s);
+  }
+
+  void deallocate(void* p) {
+    free(p);
+  }
+};
+
+template <class T>
+class MyAllocator {
+private:
+  template<class U>
+  friend class MyAllocator;
+  MyArena& _a;
+public:
+  using value_type    = T;
+
+  explicit MyAllocator(MyArena& a) : _a(a) {}
+
+  template <class U>
+  MyAllocator(MyAllocator<U> const& o) : _a(o._a) {}
+
+  value_type* allocate(std::size_t n)
+  {
+    return static_cast<value_type*>(_a.allocate(n * sizeof(value_type)));
+  }
+
+  void deallocate(value_type* p, std::size_t) noexcept
+  {
+    _a.deallocate(p);
+  }
+
+  template <class U>
+  bool operator==(MyAllocator<U> const& o) const noexcept
+  {
+    return &_a == &o._a;
+  }
+
+  template <class U>
+  bool operator!=(MyAllocator<U> const& o) const noexcept
+  {
+    return !(*this == o);
+  }
+};
+// -- custom allocator for now end --
+
 class ZHeap {
   friend class VMStructs;
 
@@ -61,6 +114,20 @@ private:
   ZUnload             _unload;
   ZServiceability     _serviceability;
 
+  MyArena a;
+  MyArena lost_objects_arena;
+  using map_allocator = MyAllocator<std::pair<uintptr_t, uintptr_t> >;
+  using ptr_to_ptr_t = unordered_map<uintptr_t, uintptr_t,
+                                     std::hash<uintptr_t>, std::equal_to<uintptr_t>, map_allocator>;
+  ptr_to_ptr_t object_remaped{
+                     400, std::hash<uintptr_t>(), std::equal_to<uintptr_t>(), map_allocator{a}
+  };
+
+  ptr_to_ptr_t object_expected_dest{
+                     3000, std::hash<uintptr_t>(), std::equal_to<uintptr_t>(), map_allocator{a}
+  };
+
+
   size_t heap_min_size() const;
   size_t heap_initial_size() const;
   size_t heap_max_size() const;
@@ -73,6 +140,15 @@ private:
   void fixup_partial_loads();
 
 public:
+  void add_expected(uintptr_t from, uintptr_t to);
+  bool contains_expected(uintptr_t from) const;
+  uintptr_t get_expected(uintptr_t from) const;
+
+  void add_remap(uintptr_t from, uintptr_t to);
+  uintptr_t get_remap(uintptr_t from) const;
+  void remove(uintptr_t from);
+  bool contains(uintptr_t from) const;
+
   static ZHeap* heap();
   ZLock global_lock;
 
