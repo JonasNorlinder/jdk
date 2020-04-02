@@ -28,60 +28,6 @@
 #include "gc/z/zHeap.inline.hpp"
 #include "memory/allocation.hpp"
 
-// -- custom allocator for now begin --
-#include <unordered_map>
-#include <vector>
-using namespace std;
-class MyArena {
-public:
-  void *allocate(size_t s) {
-    return malloc(s);
-  }
-
-  void deallocate(void* p) {
-    free(p);
-  }
-};
-
-template <class T>
-class MyAllocator {
-private:
-  template<class U>
-  friend class MyAllocator;
-  MyArena& _a;
-public:
-  using value_type    = T;
-
-  explicit MyAllocator(MyArena& a) : _a(a) {}
-
-  template <class U>
-  MyAllocator(MyAllocator<U> const& o) : _a(o._a) {}
-
-  value_type* allocate(std::size_t n)
-  {
-    return static_cast<value_type*>(_a.allocate(n * sizeof(value_type)));
-  }
-
-  void deallocate(value_type* p, std::size_t) noexcept
-  {
-    _a.deallocate(p);
-  }
-
-  template <class U>
-  bool operator==(MyAllocator<U> const& o) const noexcept
-  {
-    return &_a == &o._a;
-  }
-
-  template <class U>
-  bool operator!=(MyAllocator<U> const& o) const noexcept
-  {
-    return !(*this == o);
-  }
-};
-// -- custom allocator for now end --
-
-
 class ZLiveMapIterator : public ObjectClosure {
 private:
   ZHeap* _heap;
@@ -89,14 +35,6 @@ private:
   ZPage *_current_page;
   ZAllocationFlags _flags;
   ZFragmentEntry *_current_entry;
-  uintptr_t _first_address_in_entry;
-
-  MyArena a;
-  MyArena lost_objects_arena;
-  using map_allocator = MyAllocator<std::pair<uintptr_t, uintptr_t> >;
-  using ptr_to_ptr_t = map<uintptr_t, uintptr_t,
-                           std::less<uintptr_t>, map_allocator>;
-  ptr_to_ptr_t tmp_object_remaped{std::less<uintptr_t>(), map_allocator{a}};
 
 public:
   ZLiveMapIterator(ZFragment* fragment, ZPage* new_page, ZAllocationFlags flags) :
@@ -106,32 +44,12 @@ public:
     _flags(flags),
     _current_entry(fragment->entries_begin())
   {
-    _current_entry->set_live_bytes(_current_page->top() - _current_page->start());
+    _current_entry->set_live_bytes_before_fragment(_current_page->top() - _current_page->start());
   }
 
   ZPage *current_page() const {
     return _current_page;
   }
-
-  /// BEGIN DEBUG
-  void install_last_entry() {
-    auto h = ZHeap::heap();
-    h->global_lock.lock();
-    tmp_object_remaped.clear();
-    h->global_lock.unlock();
-  }
-
-  void move_current_entry() {
-    auto h = ZHeap::heap();
-    h->global_lock.lock();
-    for (auto it : tmp_object_remaped) {
-      size_t obj_size = ZUtils::object_size(ZAddress::good(it.first));
-      uintptr_t new_address = _current_page->alloc_object(obj_size);
-    }
-    tmp_object_remaped.clear();
-    h->global_lock.unlock();
-  }
-  /// END DEBUG
 
   virtual void do_object(oop obj) {
     uintptr_t from_offset = ZAddress::offset(ZOop::to_address(obj));
@@ -149,44 +67,21 @@ public:
 
     // Allocate for object
     if (_current_entry < entry_for_offset) {
-      /// Advance _current_entry_pointer
       _current_entry = entry_for_offset;
-      _current_entry->set_live_bytes(_current_page->top() - _current_page->start());
-
-      /// BEGIN DEBUG
-      install_last_entry();
-      /// END DEBUG
-
-      _first_address_in_entry = from_offset;
+      _current_entry->set_live_bytes_before_fragment(_current_page->top() - _current_page->start());
     }
 
     uintptr_t allocated_obj = _current_page->alloc_object(obj_size);
 
-    /// If allocation did not fit on page, move entire current entry to next page
     if (allocated_obj == 0) {
-      size_t bytes_allocated_on_previous_page = _current_page->top() - _current_entry->get_live_bytes();
-
       _current_page = ZHeap::heap()->alloc_page(_current_page->type(), _current_page->size(), _flags);
-      _fragment->add_page_break(_current_page, _first_address_in_entry);
-
-      /// Reset live byte counter for current entry
-      _current_entry->set_live_bytes(0);
-
-      /// BEGIN DEBUG
-      /// NOTE -- when removed, add bytes_allocated_on_previous_page to obj_size
-      if (true) {
-        move_current_entry();
-      } else {
-        /// END DEBUG
-        obj_size += bytes_allocated_on_previous_page;
-      }
       allocated_obj = _current_page->alloc_object(obj_size);
+      _fragment->add_page_break(_current_page, from_offset);
     }
-
-    /// BEGIN DEBUG
-    tmp_object_remaped[from_offset] = ZAddress::offset(allocated_obj);
-    /// END DEBUG
-
+    // ZHeap* heap = ZHeap::heap();
+    // heap->global_lock.lock();
+    // heap->add_expected(from_offset, ZAddress::offset(allocated_obj));
+    // heap->global_lock.unlock();
   }
 };
 
@@ -215,10 +110,6 @@ void ZRelocationSet::populate(ZPage* const* group0, size_t ngroup0,
     ZLiveMapIterator cl = ZLiveMapIterator(fragment, current_new_page, flags);
     old_page->_livemap.iterate(&cl, ZAddress::good(old_page->start()), old_page->object_alignment_shift());
     current_new_page = cl.current_page();
-    /// BEGIN DEBUG
-    cl.install_last_entry();
-    /// END DEBUG
-
     _fragments[fragment_index++] = fragment;
   }
 
@@ -231,10 +122,6 @@ void ZRelocationSet::populate(ZPage* const* group0, size_t ngroup0,
     ZLiveMapIterator cl = ZLiveMapIterator(fragment, current_new_page, flags);
     old_page->_livemap.iterate(&cl, ZAddress::good(old_page->start()), old_page->object_alignment_shift());
     current_new_page = cl.current_page();
-    /// BEGIN DEBUG
-    cl.install_last_entry();
-    /// END DEBUG
-
     _fragments[fragment_index++] = fragment;
   }
 }
