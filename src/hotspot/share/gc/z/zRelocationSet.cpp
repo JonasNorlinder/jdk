@@ -44,7 +44,7 @@ public:
     _flags(flags),
     _current_entry(fragment->entries_begin())
   {
-    _current_entry->set_live_bytes(_current_page->top() - _current_page->start());
+    _current_entry->set_live_bytes_before_fragment(_current_page->top() - _current_page->start());
   }
 
   ZPage *current_page() const {
@@ -68,7 +68,7 @@ public:
     // Allocate for object
     if (_current_entry < entry_for_offset) {
       _current_entry = entry_for_offset;
-      _current_entry->set_live_bytes(_current_page->top() - _current_page->start());
+      _current_entry->set_live_bytes_before_fragment(_current_page->top() - _current_page->start());
     }
 
     uintptr_t allocated_obj = _current_page->alloc_object(obj_size);
