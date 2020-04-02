@@ -100,7 +100,7 @@ inline int32_t ZFragmentEntry::get_next_live_object(ZFragmentObjectCursor* curso
   return object;
 }
 
-inline uint32_t ZFragmentEntry::count_live_objects(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment) const {
+inline uint32_t ZFragmentEntry::live_bytes(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment) const {
   size_t index = fragment_internal_index(old_page, from_offset);
   assert(index < 32, "index out of bounds");
   uint32_t cursor = 0;

@@ -65,6 +65,7 @@ public:
     ZSizeEntry* size_entry = _fragment->size_entries_begin() + p_index;
     size_entry->entry = obj_size;
 
+    // Allocate for object
     if (_current_entry < entry_for_offset) {
       _current_entry = entry_for_offset;
       _current_entry->set_live_bytes(_current_page->top() - _current_page->start());
@@ -77,7 +78,6 @@ public:
       allocated_obj = _current_page->alloc_object(obj_size);
       _fragment->add_page_break(_current_page, ZAddress::offset(allocated_obj));
 
-      _current_entry->set_live_bytes(_current_page->top() - _current_page->start());
     }
   }
 };

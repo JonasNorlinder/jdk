@@ -114,7 +114,7 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* ent
   return
     new_page(from_offset)->start() +
     entry->get_live_bytes() +
-    entry->count_live_objects(_ops, from_offset, this);
+    entry->live_bytes(_ops, from_offset, this);
 }
 
 inline void ZFragment::add_page_break(ZPage *snd_page, uintptr_t first_on_snd) {
