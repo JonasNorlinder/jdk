@@ -24,6 +24,8 @@ private:
   volatile uint32_t       _refcount;
   uint64_t                _conversion_constant;
   uintptr_t               _first_from_offset_mapped_to_snd_page;
+  size_t                  _page_break_entry_index;
+  size_t                  _page_break_entry_internal_index;
 
   bool inc_refcount();
   bool dec_refcount();

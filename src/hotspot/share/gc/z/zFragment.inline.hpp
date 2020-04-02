@@ -120,6 +120,8 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* ent
 inline void ZFragment::add_page_break(ZPage *snd_page, uintptr_t first_on_snd) {
   _snd_page = snd_page;
   _first_from_offset_mapped_to_snd_page = first_on_snd;
+  _page_break_entry_index = offset_to_index(first_on_snd);
+  _page_break_entry_internal_index = offset_to_internal_index(first_on_snd);
 }
 
 #endif // SHARE_GC_Z_ZFRAGMENT_INLINE_HPP
