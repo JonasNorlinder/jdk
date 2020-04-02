@@ -110,10 +110,30 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset) {
   return to_offset(from_offset, find(from_offset));
 }
 
+inline size_t ZFragment::page_break_entry_index() const {
+  return _page_break_entry_index;
+}
+
+inline size_t ZFragment::page_break_entry_internal_index() const {
+  return _page_break_entry_internal_index;
+}
+
+inline bool ZFragment::is_on_snd_page(uintptr_t from_offset) const {
+  return from_offset >= _first_from_offset_mapped_to_snd_page && _snd_page;
+}
+
+inline bool ZFragment::is_on_page_break(ZFragmentEntry *entry) {
+  return entry ==
+    (entries_begin() + _page_break_entry_index) && _snd_page;
+}
+
 inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* entry) {
+  size_t live_bytes_before_fragment = is_on_page_break(entry) ?
+    0 : entry->live_bytes_before_fragment();
+
   return
     new_page(from_offset)->start() +
-    entry->live_bytes_before_fragment() +
+    live_bytes_before_fragment +
     entry->live_bytes_on_fragment(_ops, from_offset, this);
 }
 

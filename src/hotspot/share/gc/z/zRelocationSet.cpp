@@ -77,7 +77,6 @@ public:
       _current_page = ZHeap::heap()->alloc_page(_current_page->type(), _current_page->size(), _flags);
       allocated_obj = _current_page->alloc_object(obj_size);
       _fragment->add_page_break(_current_page, ZAddress::offset(allocated_obj));
-
     }
   }
 };

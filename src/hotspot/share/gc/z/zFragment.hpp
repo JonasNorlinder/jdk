@@ -49,6 +49,11 @@ public:
   size_t offset_to_index(uintptr_t from_offset) const;
   size_t offset_to_internal_index(uintptr_t from_offset) const;
 
+  bool is_on_page_break(ZFragmentEntry *entry);
+  bool is_on_snd_page(uintptr_t from_offset) const;
+  size_t page_break_entry_index() const;
+  size_t page_break_entry_internal_index() const;
+
   bool retain_page();
   void release_page();
 

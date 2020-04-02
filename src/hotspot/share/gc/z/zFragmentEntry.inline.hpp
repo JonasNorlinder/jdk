@@ -100,12 +100,17 @@ inline int32_t ZFragmentEntry::get_next_live_object(ZFragmentObjectCursor* curso
   return object;
 }
 
-inline uint32_t ZFragmentEntry::live_bytes_on_fragment(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment) const {
+inline uint32_t ZFragmentEntry::live_bytes_on_fragment(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment) {
   size_t index = fragment_internal_index(old_page, from_offset);
   assert(index < 32, "index out of bounds");
+
   uint32_t cursor = 0;
   uint32_t live_bytes = 0;
   uint32_t live_bits = _entry;
+
+  if (fragment->is_on_page_break(this) && fragment->is_on_snd_page(from_offset)) {
+    cursor = fragment->page_break_entry_internal_index();
+  }
 
   for (; cursor<index; cursor = cursor + 1) {
     bool live = get_liveness(cursor);
