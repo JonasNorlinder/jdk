@@ -155,6 +155,23 @@ uintptr_t ZRelocate::relocate_object(ZFragment* fragment, uintptr_t from_addr) c
 
   const uintptr_t to_offset = relocate_object_inner(fragment, from_offset);
 
+  // heap->global_lock.lock();
+  // if (heap->get_expected(from_offset) != to_offset) {
+  //   bool t = fragment->_new_page->is_in(ZAddress::good(to_offset));
+  //   bool e = fragment->_new_page->is_in(ZAddress::good(heap->get_expected(from_offset)));
+  //   std::cerr <<
+  //     "to_offset = " <<
+  //     std::hex <<
+  //     to_offset <<
+  //     " " << t <<
+  //     " expected = " <<
+  //     heap->get_expected(from_offset) <<
+  //     " " << e <<
+  //     "\n";
+  //   assert(heap->get_expected(from_offset) == to_offset, "");
+  // }
+  // heap->global_lock.unlock();
+
   if (from_offset == to_offset) {
     // In-place forwarding, pin page
     assert(false, "not supported yet");
