@@ -29,13 +29,13 @@ private:
   typedef ZBitField<uint64_t, uint32_t, 32, 31>    field_live_bytes;
   typedef ZBitField<uint64_t, bool, 63, 1>         field_copied;
 
+  size_t convert_index(size_t index) const;
+
 public:
   uint64_t         _entry;
 
   ZFragmentEntry() :
     _entry(0) {}
-
-  void clear();
 
   void set_size_bit(size_t index, size_t size);
 
@@ -52,7 +52,6 @@ public:
   void set_copied();
 
   uint32_t live_bytes_on_fragment(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment);
-  uint32_t calc_fragment_live_bytes(ZFragment* fragment, size_t index) const;
 
 };
 
