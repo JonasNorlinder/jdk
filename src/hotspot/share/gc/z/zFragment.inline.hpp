@@ -35,10 +35,6 @@ inline const size_t ZFragment::old_size() {
   return _old_virtual.size();
 }
 
-inline ZSizeEntry* ZFragment::size_entries_begin() const {
-  return (ZSizeEntry*) entries_begin() + entries_count();
-}
-
 inline size_t ZFragment::entries_count() const {
   return _entries.length();
 }
@@ -100,10 +96,6 @@ inline ZFragmentEntry* ZFragment::find(uintptr_t from_offset) const {
   // TODO: Add explaination of magical 2 instrucion lookup
   //return (ZFragmentEntry*)(from_offset >> 5) - _conversion_constant + (uintptr_t)this->entries_begin();
   return entries_begin() + offset_to_index(from_offset);
-}
-
-inline uintptr_t ZFragment::page_index(uintptr_t from_offset) {
-  return (from_offset - _ops) / 8;
 }
 
 inline uintptr_t ZFragment::to_offset(uintptr_t from_offset) {
