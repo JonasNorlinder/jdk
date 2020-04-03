@@ -1,7 +1,6 @@
 #ifndef SHARE_GC_Z_ZFRAGMENT_HPP
 #define SHARE_GC_Z_ZFRAGMENT_HPP
 
-#include "gc/z/zSizeEntry.hpp"
 #include "gc/z/zFragmentEntry.hpp"
 #include "gc/z/zAttachedArray.hpp"
 #include "gc/z/zVirtualMemory.hpp"
@@ -14,7 +13,6 @@ class ZFragment {
 
 private:
   typedef ZAttachedArray<ZFragment, ZFragmentEntry> AttachedArray;
-  typedef ZAttachedArray<AttachedArray, ZSizeEntry> SizeAttachedArray;
 
   const AttachedArray     _entries;
   const size_t            _object_alignment_shift;
@@ -62,9 +60,6 @@ public:
   size_t entries_count() const;
   ZFragmentEntry* entries_begin() const;
   ZFragmentEntry* entries_end();
-
-  uintptr_t page_index(uintptr_t offset);
-  ZSizeEntry* size_entries_begin() const;
 
   void add_page_break(ZPage *snd_page, uintptr_t first_on_snd);
 };

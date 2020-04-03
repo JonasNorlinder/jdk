@@ -119,12 +119,9 @@ private:
   using map_allocator = MyAllocator<std::pair<uintptr_t, uintptr_t> >;
   using ptr_to_ptr_t = unordered_map<uintptr_t, uintptr_t,
                                      std::hash<uintptr_t>, std::equal_to<uintptr_t>, map_allocator>;
-  ptr_to_ptr_t object_remaped{
-                     400, std::hash<uintptr_t>(), std::equal_to<uintptr_t>(), map_allocator{a}
-  };
 
   ptr_to_ptr_t object_expected_dest{
-                     3000, std::hash<uintptr_t>(), std::equal_to<uintptr_t>(), map_allocator{a}
+                     0, std::hash<uintptr_t>(), std::equal_to<uintptr_t>(), map_allocator{a}
   };
 
 
@@ -143,11 +140,6 @@ public:
   void add_expected(uintptr_t from, uintptr_t to);
   bool contains_expected(uintptr_t from) const;
   uintptr_t get_expected(uintptr_t from) const;
-
-  void add_remap(uintptr_t from, uintptr_t to);
-  uintptr_t get_remap(uintptr_t from) const;
-  void remove(uintptr_t from);
-  bool contains(uintptr_t from) const;
 
   static ZHeap* heap();
   ZLock global_lock;
