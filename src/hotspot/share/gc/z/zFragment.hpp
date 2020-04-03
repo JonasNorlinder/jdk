@@ -30,7 +30,7 @@ private:
   bool inc_refcount();
   bool dec_refcount();
 
-  ZFragment(ZPage* old_page, ZPage* new_page, size_t nentries, size_t n_sizeentries);
+  ZFragment(ZPage* old_page, ZPage* new_page, size_t nentries);
 
 public:
   static ZFragment*  create(ZPage* old_page, ZPage* new_page);
