@@ -7,7 +7,7 @@
 #include "gc/z/zHeap.inline.hpp"
 #include "gc/z/zAddress.hpp"
 
-ZFragment::ZFragment(ZPage* old_page, ZPage* new_page, size_t nentries, size_t n_sizeentries)
+ZFragment::ZFragment(ZPage* old_page, ZPage* new_page, size_t nentries)
   : _entries(nentries),
     _object_alignment_shift(old_page->object_alignment_shift()),
     _old_page(old_page),
@@ -29,8 +29,7 @@ ZFragment* ZFragment::create(ZPage* old_page, ZPage* new_page) {
   // then requiered number of entries to describe the liveness,
   // information is thus 2 MB / (32 words * 8 bytes) = 8 192
   const size_t nentries = size / 256;
-  const size_t n_sizeentries = size / 8;
-  ZFragment* fragment = ::new (AttachedArray::alloc(nentries+n_sizeentries)) ZFragment(old_page, new_page, nentries, n_sizeentries);
+  ZFragment* fragment = ::new (AttachedArray::alloc(nentries)) ZFragment(old_page, new_page, nentries);
 
   fragment->_conversion_constant = (old_page->start() >> 5);
 
