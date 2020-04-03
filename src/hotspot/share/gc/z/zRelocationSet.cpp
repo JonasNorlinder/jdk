@@ -76,12 +76,6 @@ public:
       allocated_obj = _current_page->alloc_object(obj_size);
       _fragment->add_page_break(_current_page, from_offset);
     }
-    // DEBUG BEGIN
-    // ZHeap* heap = ZHeap::heap();
-    // heap->global_lock.lock();
-    // heap->add_expected(from_offset, ZAddress::offset(allocated_obj));
-    // heap->global_lock.unlock();
-    // DEBUG END
   }
 };
 
