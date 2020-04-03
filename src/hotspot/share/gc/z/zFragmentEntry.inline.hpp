@@ -7,8 +7,9 @@
 #include "utilities/count_leading_zeros.hpp"
 #include <iostream>
 
-inline void ZFragmentEntry::clear() {
-  _entry = 0;
+inline size_t ZFragmentEntry::convert_index(size_t index) const {
+  assert(index < 32, "index too large");
+  return 31 - index;
 }
 
 inline bool ZFragmentEntry::get_liveness(size_t index) const {
@@ -25,7 +26,7 @@ inline bool ZFragmentEntry::get_liveness(size_t index) const {
   //                                       AND
   //   0000 0000 0000 0000 0000 0000 0000 0001
   // = 0000 0000 0000 0000 0000 0000 0000 0001 = True
-  return (_entry >> index) & 1UL;
+  return (_entry >> convert_index(index)) & 1UL;
 }
 
 inline void ZFragmentEntry::set_liveness(size_t index) {
@@ -33,7 +34,7 @@ inline void ZFragmentEntry::set_liveness(size_t index) {
   assert(ZGlobalPhase == ZPhaseMarkCompleted, "Updating liveness is not allowed");
   assert(index < 32, "Invalid index");
 
-  _entry |= 1UL << index;
+  _entry |= 1UL << convert_index(index);
 }
 
 inline bool ZFragmentEntry::copied() const {
@@ -60,24 +61,6 @@ inline void ZFragmentEntry::set_live_bytes_before_fragment(uint32_t value) {
   _entry = field_live_bytes::encode(value) | (_entry & 0x80000000FFFFFFFF);
 }
 
-inline uint32_t ZFragmentEntry::calc_fragment_live_bytes(ZFragment* fragment, size_t entry_index) const {
-  assert(!copied(), "Updating not allowed");
-  uint32_t live_bytes = 0;
-
-  // Simplest implmentation as possible. NOT EFFICENT
-  // TODO: change to count_leading_zeros
-  size_t internal_index = 0;
-  while (internal_index < 32) {
-    if (get_liveness(internal_index)) {
-      uintptr_t offset = fragment->from_offset(entry_index, internal_index);
-      live_bytes += ZUtils::object_size(ZAddress::good(offset));
-    }
-
-    internal_index++;
-  }
-  return live_bytes;
-}
-
 inline void ZFragmentEntry::set_size_bit(size_t index, size_t size) {
   assert(!copied(), "Updating not allowed");
   const size_t size_index = index + size / 8 - 1;
@@ -96,26 +79,21 @@ inline void ZFragmentEntry::set_size_bit(size_t index, size_t size) {
 }
 
 inline int32_t ZFragmentEntry::get_next_live_object(ZFragmentObjectCursor* cursor) const {
-  ZFragmentObjectCursor local_cursor = *cursor;
-  if (local_cursor > 31) {
-    return -1;
-  }
+  if (*cursor > 31) return -1;
+  uint32_t live_bits = _entry << convert_index(*cursor);
+  if (live_bits == 0) return -1;
   int32_t object = -1;
-  bool count = false;
 
-  for (;local_cursor<32;local_cursor++) {
-    bool live = get_liveness(local_cursor);
+  object = count_leading_zeros(live_bits) + 1;
 
-    if (live && !count) { // first encounter
-      object = local_cursor;
-      count = true;
-    } else if (live && count) { // last encounter
-      *cursor = local_cursor + 1;
-      return object;
-    }
+  live_bits = live_bits << object;
+  if (live_bits == 0) {
+    *cursor = 32;
+  } else {
+    *cursor = object + count_leading_zeros(live_bits) + 1;
   }
-  *cursor = local_cursor;
-  return object;
+
+  return convert_index(object);
 }
 
 inline uint32_t ZFragmentEntry::live_bytes_on_fragment(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment) {
