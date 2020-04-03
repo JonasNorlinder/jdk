@@ -75,28 +75,46 @@ inline uint32_t ZFragmentEntry::calc_fragment_live_bytes(ZFragment* fragment, si
 
     internal_index++;
   }
-
   return live_bytes;
+}
+
+inline void ZFragmentEntry::set_size_bit(size_t index, size_t size) {
+  assert(!copied(), "Updating not allowed");
+  const size_t size_index = index + size / 8 - 1;
+
+  // If size_index is larger than the current entry, that
+  // would imply that this is the last living object on this entry.
+  //
+  // We need to calculate the live bytes of all living objects *before*
+  // the current object we are inspecting, therefore this implies that
+  // we don't have to store the size bit of the last object on the entry.
+  if (size_index > 31) {
+    return;
+  }
+
+  set_liveness(size_index % 32);
 }
 
 inline int32_t ZFragmentEntry::get_next_live_object(ZFragmentObjectCursor* cursor) const {
   ZFragmentObjectCursor local_cursor = *cursor;
-  assert(local_cursor < 33, "cursor value too large");
-  if (local_cursor == 32) {
+  if (local_cursor > 31) {
     return -1;
   }
   int32_t object = -1;
-  uint32_t live_bits = _entry;
+  bool count = false;
 
   for (;local_cursor<32;local_cursor++) {
     bool live = get_liveness(local_cursor);
-    if (live) {
+
+    if (live && !count) { // first encounter
       object = local_cursor;
+      count = true;
+    } else if (live && count) { // last encounter
       *cursor = local_cursor + 1;
       return object;
     }
   }
-
+  *cursor = local_cursor;
   return object;
 }
 
@@ -106,7 +124,7 @@ inline uint32_t ZFragmentEntry::live_bytes_on_fragment(uintptr_t old_page, uintp
 
   uint32_t cursor = 0;
   uint32_t live_bytes = 0;
-  uint32_t live_bits = _entry;
+  bool count = false;
 
   if (fragment->is_on_page_break(this) && fragment->is_on_snd_page(from_offset)) {
     cursor = fragment->page_break_entry_internal_index();
@@ -114,15 +132,18 @@ inline uint32_t ZFragmentEntry::live_bytes_on_fragment(uintptr_t old_page, uintp
 
   for (; cursor<index; cursor = cursor + 1) {
     bool live = get_liveness(cursor);
-    if (live) {
-      uintptr_t offset = fragment->from_offset(fragment->offset_to_index(from_offset), cursor);
-      size_t p_index = fragment->page_index(offset);
-      assert(p_index < 262144, "out of bounds");
-      live_bytes += (fragment->size_entries_begin() + p_index)->entry;
+    if (live && !count) { // first encounter
+      live_bytes++;
+      count = true;
+    } else if (live && count) { // last encounter
+      live_bytes++;
+      count = false;
+    } else if (count) {
+      live_bytes++;
     }
   }
 
-  return live_bytes;
+  return live_bytes << 3;
 }
 
 inline size_t ZFragmentEntry::fragment_internal_index(uintptr_t old_page, uintptr_t from_offset) const {

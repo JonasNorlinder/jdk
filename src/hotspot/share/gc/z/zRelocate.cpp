@@ -137,6 +137,7 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
                         to_good,
                         size);
     i++;
+    if (i > 31) assert(false, "");
   } while (internal_index != -1);
   entry->set_copied();
 

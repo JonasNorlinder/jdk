@@ -52,18 +52,16 @@ public:
   }
 
   virtual void do_object(oop obj) {
-    uintptr_t from_offset = ZAddress::offset(ZOop::to_address(obj));
-    size_t obj_size = ZUtils::object_size(ZAddress::good(from_offset));
+    const uintptr_t from_offset = ZAddress::offset(ZOop::to_address(obj));
+    const size_t obj_size = ZUtils::object_size(ZAddress::good(from_offset));
+    const size_t internal_index = _fragment->offset_to_internal_index(from_offset);
     ZFragmentEntry* entry_for_offset = _fragment->find(from_offset);
 
     // Copy liveness information
-    size_t internal_index = _fragment->offset_to_internal_index(from_offset);
     entry_for_offset->set_liveness(internal_index);
 
-    // Copy object size
-    size_t p_index = _fragment->page_index(from_offset);
-    ZSizeEntry* size_entry = _fragment->size_entries_begin() + p_index;
-    size_entry->entry = obj_size;
+    // Store object size
+    entry_for_offset->set_size_bit(internal_index, obj_size);
 
     // Allocate for object
     if (_current_entry < entry_for_offset) {
@@ -78,10 +76,12 @@ public:
       allocated_obj = _current_page->alloc_object(obj_size);
       _fragment->add_page_break(_current_page, from_offset);
     }
+    // DEBUG BEGIN
     // ZHeap* heap = ZHeap::heap();
     // heap->global_lock.lock();
     // heap->add_expected(from_offset, ZAddress::offset(allocated_obj));
     // heap->global_lock.unlock();
+    // DEBUG END
   }
 };
 

@@ -37,6 +37,8 @@ public:
 
   void clear();
 
+  void set_size_bit(size_t index, size_t size);
+
   bool get_liveness(size_t index) const;
   void set_liveness(size_t index);
 
