@@ -9,7 +9,7 @@
 
 ZFragment::ZFragment(ZPage* old_page, ZPage* new_page, size_t nentries)
   : _entries(nentries),
-    _object_alignment_shift(old_page->object_alignment_shift()),
+    //_object_alignment_shift(old_page->object_alignment_shift()),
     _old_page(old_page),
     _ops(old_page->start()),
     _old_virtual(old_page->virtual_memory()),
@@ -31,7 +31,7 @@ ZFragment* ZFragment::create(ZPage* old_page, ZPage* new_page) {
   const size_t nentries = size / 256;
   ZFragment* fragment = ::new (AttachedArray::alloc(nentries)) ZFragment(old_page, new_page, nentries);
 
-  fragment->_conversion_constant = (old_page->start() >> 5);
+  //  fragment->_conversion_constant = (old_page->start() >> 5);
 
   return fragment;
 }

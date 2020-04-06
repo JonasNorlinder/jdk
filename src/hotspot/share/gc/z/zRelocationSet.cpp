@@ -27,6 +27,9 @@
 #include "gc/z/zAllocationFlags.hpp"
 #include "gc/z/zHeap.inline.hpp"
 #include "memory/allocation.hpp"
+#include "utilities/powerOfTwo.hpp"
+#include "gc/z/zForwarding.hpp"
+#include "gc/z/zForwardingEntry.hpp"
 
 class ZLiveMapIterator : public ObjectClosure {
 private:
@@ -95,6 +98,9 @@ void ZRelocationSet::populate(ZPage* const* group0, size_t ngroup0,
   flags.set_non_blocking();
   flags.set_worker_thread();
 
+  size_t total_fragment_size = 0;
+  size_t total_forwarding_size = 0;
+
   // Populate group 0 (medium)
   ZPage* current_new_page = ngroup0 > 0 ? ZHeap::heap()->alloc_page(group0[0]->type(), group0[0]->size(), flags) : NULL;
   for (size_t i = 0; i < ngroup0; i++) {
@@ -105,6 +111,8 @@ void ZRelocationSet::populate(ZPage* const* group0, size_t ngroup0,
     old_page->_livemap.iterate(&cl, ZAddress::good(old_page->start()), old_page->object_alignment_shift());
     current_new_page = cl.current_page();
     _fragments[fragment_index++] = fragment;
+    total_fragment_size += sizeof(ZFragment) + sizeof(ZFragmentEntry) * (old_page->size()/256);
+    total_forwarding_size += sizeof(ZForwarding) + sizeof(ZForwardingEntry) * round_up_power_of_2(old_page->live_objects() * 2);
   }
 
   // Populate group 1 (small)
@@ -117,7 +125,12 @@ void ZRelocationSet::populate(ZPage* const* group0, size_t ngroup0,
     old_page->_livemap.iterate(&cl, ZAddress::good(old_page->start()), old_page->object_alignment_shift());
     current_new_page = cl.current_page();
     _fragments[fragment_index++] = fragment;
+    total_fragment_size += sizeof(ZFragment) + sizeof(ZFragmentEntry) * (old_page->size()/256);
+    total_forwarding_size += sizeof(ZForwarding) + sizeof(ZForwardingEntry) * round_up_power_of_2(old_page->live_objects() * 2);
   }
+
+    log_info(gc, reloc)("Total size of ZFowarding + ZForwardingEntry: " SIZE_FORMAT, total_forwarding_size);
+  log_info(gc, reloc)("Total size of ZFragment + ZFragmentEntry: " SIZE_FORMAT, total_fragment_size);
 }
 
 void ZRelocationSet::reset() {
