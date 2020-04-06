@@ -13,16 +13,15 @@ class ZFragment {
 
 private:
   typedef ZAttachedArray<ZFragment, ZFragmentEntry> AttachedArray;
-
   const AttachedArray     _entries;
-  const size_t            _object_alignment_shift;
+  //const size_t            _object_alignment_shift;
   ZPage*                  _old_page;
   const uintptr_t         _ops;
   const ZVirtualMemory    _old_virtual;
   ZPage*                  _new_page;
   ZPage*                  _snd_page;
   volatile uint32_t       _refcount;
-  uint64_t                _conversion_constant;
+  //uint64_t                _conversion_constant;
   uintptr_t               _first_from_offset_mapped_to_snd_page;
   size_t                  _page_break_entry_index;
   size_t                  _page_break_entry_internal_index;
@@ -33,6 +32,7 @@ private:
   ZFragment(ZPage* old_page, ZPage* new_page, size_t nentries);
 
 public:
+
   static ZFragment*  create(ZPage* old_page, ZPage* new_page);
   static void        destroy(ZFragment* fragment);
 
