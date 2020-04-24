@@ -149,29 +149,14 @@ uintptr_t ZRelocate::relocate_object(ZFragment* fragment, uintptr_t from_addr) c
   ZHeap* heap = ZHeap::heap();
   ZFragmentEntry *e = fragment->find(from_offset);
 
+  heap->lock_map.lock(from_offset);
   if (e->copied()) {
     uintptr_t to_good = ZAddress::good(fragment->to_offset(from_offset, e));
     return to_good;
   }
 
   const uintptr_t to_offset = relocate_object_inner(fragment, from_offset);
-
-  // heap->global_lock.lock();
-  // if (heap->get_expected(from_offset) != to_offset) {
-  //   bool t = fragment->_new_page->is_in(ZAddress::good(to_offset));
-  //   bool e = fragment->_new_page->is_in(ZAddress::good(heap->get_expected(from_offset)));
-  //   std::cerr <<
-  //     "to_offset = " <<
-  //     std::hex <<
-  //     to_offset <<
-  //     " " << t <<
-  //     " expected = " <<
-  //     heap->get_expected(from_offset) <<
-  //     " " << e <<
-  //     "\n";
-  //   assert(heap->get_expected(from_offset) == to_offset, "");
-  // }
-  // heap->global_lock.unlock();
+  heap->lock_map.unlock(from_offset);
 
   if (from_offset == to_offset) {
     // In-place forwarding, pin page

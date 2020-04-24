@@ -38,7 +38,7 @@
 #include "gc/z/zServiceability.hpp"
 #include "gc/z/zUnload.hpp"
 #include "gc/z/zWorkers.hpp"
-#include "gc/z/zLock.inline.hpp"
+#include "gc/z/zLockMap.hpp"
 
 class ThreadClosure;
 
@@ -74,9 +74,9 @@ private:
 
 public:
   static ZHeap* heap();
-  ZLock global_lock;
-
   ZHeap();
+
+  ZLockMap lock_map;
 
   bool is_initialized() const;
   // Heap metrics
