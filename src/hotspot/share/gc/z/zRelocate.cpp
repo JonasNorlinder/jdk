@@ -152,6 +152,7 @@ uintptr_t ZRelocate::relocate_object(ZFragment* fragment, uintptr_t from_addr) c
   heap->lock_map.lock(from_offset);
   if (e->copied()) {
     uintptr_t to_good = ZAddress::good(fragment->to_offset(from_offset, e));
+    heap->lock_map.unlock(from_offset);
     return to_good;
   }
 

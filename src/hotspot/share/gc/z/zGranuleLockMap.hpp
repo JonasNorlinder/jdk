@@ -25,6 +25,9 @@
 #define SHARE_GC_Z_ZGRANULELOCKMAP_HPP
 
 #include "memory/allocation.hpp"
+#include "utilities/powerOfTwo.hpp"
+#include "gc/z/zGlobals.hpp"
+#include "runtime/os.hpp"
 
 template<typename T>
 class ZGranuleLockMapIterator;
@@ -35,6 +38,11 @@ class ZGranuleLockMap {
   friend class ZGranuleLockMapIterator<T>;
 
 private:
+  // Granule lock shift/size
+  const size_t pw = round_up_power_of_2(os::processor_count() << 2);
+  const size_t ZGranuleLockSizeShift = log2(ZAddressOffsetMax / pw);
+  const size_t ZGranuleLockSize  = (size_t)1 << ZGranuleLockSizeShift;
+
   const size_t _size;
   T* const     _map;
 

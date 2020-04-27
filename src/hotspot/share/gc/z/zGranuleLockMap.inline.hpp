@@ -33,7 +33,7 @@
 
 template <typename T>
 inline ZGranuleLockMap<T>::ZGranuleLockMap(size_t max_offset) :
-    _size(max_offset >> ZGranuleSizeShift),
+     _size(max_offset >> ZGranuleSizeShift),
     _map(MmapArrayAllocator<T>::allocate(_size, mtGC)) {
   assert(is_aligned(max_offset, ZGranuleLockSize), "Misaligned");
 }

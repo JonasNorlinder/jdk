@@ -25,8 +25,6 @@
 #define SHARE_GC_Z_ZGLOBALS_HPP
 
 #include "utilities/globalDefinitions.hpp"
-#include "utilities/powerOfTwo.hpp"
-#include "runtime/os.hpp"
 #include "utilities/macros.hpp"
 
 #include CPU_HEADER(gc/z/zGlobals)
@@ -152,11 +150,6 @@ const size_t      ZMarkTerminateFlushMax        = 3;
 
 // Try complete mark timeout
 const uint64_t    ZMarkCompleteTimeout          = 1; // ms
-
-// Granule lock shift/size
-const size_t pw = round_up_power_of_2(os::processor_count() > 0 ? 4*os::processor_count() : 32);
-size_t ZGranuleLockSizeShift = 37; //log2(ZAddressOffsetMax / pw);
-size_t ZGranuleLockSize  = (size_t)1 << ZGranuleLockSizeShift;
 
 
 #endif // SHARE_GC_Z_ZGLOBALS_HPP
