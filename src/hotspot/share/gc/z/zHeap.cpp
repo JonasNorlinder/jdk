@@ -69,8 +69,7 @@ ZHeap::ZHeap() :
     _relocate(&_workers),
     _relocation_set(),
     _unload(&_workers),
-    _serviceability(heap_min_size(), heap_max_size()),
-    global_lock() {
+    _serviceability(heap_min_size(), heap_max_size()) {
   // Install global heap instance
   assert(_heap == NULL, "Already initialized");
   _heap = this;
