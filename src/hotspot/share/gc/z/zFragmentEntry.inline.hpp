@@ -44,7 +44,6 @@ inline void ZFragmentEntry::set_copied() {
   _entry |= 1UL << 63;
 }
 
-
 inline uint32_t ZFragmentEntry::live_bytes_before_fragment() const {
   return field_live_bytes::decode(_entry);
 }
