@@ -14,7 +14,6 @@ class ZFragment {
 private:
   typedef ZAttachedArray<ZFragment, ZFragmentEntry> AttachedArray;
 
-  ZAllocationFlags        _flags; // todo fix static-ish
   const AttachedArray     _entries;
   const size_t            _object_alignment_shift;
   ZPage*                  _old_page;
