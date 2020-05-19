@@ -18,13 +18,10 @@ ZFragment::ZFragment(ZPage* old_page, size_t nentries, ZFragment* previous_fragm
     _old_virtual(old_page->virtual_memory()),
     _new_page(NULL),
     _snd_page(NULL),
-    _refcount(1) {
-
-  ZAllocationFlags flags;
-  flags.set_relocation();
-  flags.set_non_blocking();
-  flags.set_worker_thread();
-  _flags = flags;
+    _refcount(1),
+    _first_from_offset_mapped_to_snd_page(0),
+    _page_break_entry_index(0),
+    _page_break_entry_internal_index(0){
 }
 
 ZFragment* ZFragment::create(ZPage* old_page, ZFragment* previous_fragment) {

@@ -9,9 +9,16 @@
 #include "gc/z/zHeap.hpp"
 #include "gc/z/zHash.inline.hpp"
 #include "runtime/atomic.hpp"
+#include "gc/z/zThread.inline.hpp"
 #include <iostream>
 
 inline ZPage* ZFragment::new_page(uintptr_t from_offset) {
+  if (!_new_page) {
+    alloc_page(&_new_page);
+    assert(_new_page, "out-of-memory not handled yet");
+  }
+  return _new_page;
+
   if (from_offset >= _first_from_offset_mapped_to_snd_page &&
       _first_from_offset_mapped_to_snd_page > 0) {
     if (!_snd_page) {
@@ -71,8 +78,17 @@ inline ZFragmentEntry* ZFragment::entries_end() {
 
 inline void ZFragment::alloc_page(ZPage** page) {
   ZHeap* heap = ZHeap::heap();
-  ZPage* p = heap->alloc_page(_page_type, _page_size, _flags);
+  ZAllocationFlags flags;
+  flags.set_relocation();
+  flags.set_non_blocking();
+
+  if (ZThread::is_worker()) {
+    flags.set_worker_thread();
+  }
+
+  ZPage* p = heap->alloc_page(_page_type, _page_size, flags);
   assert(p != NULL, "out-of-memory handling not supported yet");
+  p->set_top(_page_size);
   // Get NULL => success
   ZPage* page_prev = Atomic::cmpxchg(page, (ZPage*)NULL, p);
   if (page_prev) {
@@ -136,10 +152,12 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset) {
 }
 
 inline size_t ZFragment::page_break_entry_index() const {
+  assert(_first_from_offset_mapped_to_snd_page > 0, "");
   return _page_break_entry_index;
 }
 
 inline size_t ZFragment::page_break_entry_internal_index() const {
+  assert(_first_from_offset_mapped_to_snd_page > 0, "");
   return _page_break_entry_internal_index;
 }
 

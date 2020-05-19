@@ -54,7 +54,7 @@ public:
   }
 
   size_t alloc(size_t obj_size) {
-    if (_top + obj_size < _page_size) {
+    if (_top + obj_size <= _page_size) {
       _top += obj_size;
     } else {
       _top = 0;
@@ -87,9 +87,11 @@ public:
         _fragment->add_page_break(from_offset);
       } else {
         _fragment->reset();
+        assert(_top == 0, "should not have anything allocated");
+        _current_entry->set_live_bytes_before_fragment(_top);
       }
       alloc(obj_size);
-    }
+     }
     _allocated_on_new_page = true;
   }
 };
@@ -122,6 +124,7 @@ void ZRelocationSet::populate(ZPage* const* group0, size_t ngroup0,
 
   // Populate group 1 (small)
   const size_t page_size_ngroup1 = ngroup1 > 0 ? group1[0]->size() : 0;
+  overlapping_bytes = 0;
   previous_fragment = NULL;
   for (size_t i = 0; i < ngroup1; i++) {
     ZPage* old_page = group1[i];
