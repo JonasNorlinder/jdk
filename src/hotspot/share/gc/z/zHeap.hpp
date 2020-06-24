@@ -25,7 +25,7 @@
 #define SHARE_GC_Z_ZHEAP_HPP
 
 #include "gc/z/zAllocationFlags.hpp"
-#include "gc/z/zFragmentTable.hpp"
+#include "gc/z/zCompactTable.hpp"
 #include "gc/z/zMark.hpp"
 #include "gc/z/zObjectAllocator.hpp"
 #include "gc/z/zPage.hpp"

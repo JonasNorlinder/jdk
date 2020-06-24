@@ -26,8 +26,8 @@
 
 #include "gc/z/zAttachedArray.hpp"
 #include "gc/z/zCollectedHeap.hpp"
-#include "gc/z/zFragment.hpp"
-#include "gc/z/zFragmentEntry.hpp"
+#include "gc/z/zCompact.hpp"
+#include "gc/z/zCompactEntry.hpp"
 #include "gc/z/zGranuleMap.hpp"
 #include "gc/z/zHeap.hpp"
 #include "gc/z/zPageAllocator.hpp"

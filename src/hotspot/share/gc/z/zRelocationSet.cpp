@@ -22,7 +22,7 @@
  */
 
 #include "precompiled.hpp"
-#include "gc/z/zFragment.hpp"
+#include "gc/z/zCompact.hpp"
 #include "gc/z/zRelocationSet.hpp"
 #include "gc/z/zAllocationFlags.hpp"
 #include "gc/z/zHeap.inline.hpp"
