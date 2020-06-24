@@ -1,6 +1,6 @@
 #include "precompiled.hpp"
 #include "memory/allocation.hpp"
-#include "gc/z/zFragment.inline.hpp"
+#include "gc/z/zCompact.inline.hpp"
 #include "gc/z/zPage.inline.hpp"
 #include "gc/z/zPageAllocator.hpp"
 #include "gc/z/zAllocationFlags.hpp"
