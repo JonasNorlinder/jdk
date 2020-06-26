@@ -33,20 +33,20 @@ inline ZRelocationSetIteratorImpl<parallel>::ZRelocationSetIteratorImpl(ZRelocat
     _next(0) {}
 
 template <bool parallel>
-inline bool ZRelocationSetIteratorImpl<parallel>::next(ZForwarding** forwarding) {
-  const size_t nforwardings = _relocation_set->_nforwardings;
+inline bool ZRelocationSetIteratorImpl<parallel>::next(ZFragment** fragment) {
+  const size_t nfragments = _relocation_set->_nfragments;
 
   if (parallel) {
-    if (_next < nforwardings) {
+    if (_next < nfragments) {
       const size_t next = Atomic::fetch_and_add(&_next, 1u);
-      if (next < nforwardings) {
-        *forwarding = _relocation_set->_forwardings[next];
+      if (next < nfragments) {
+        *fragment = _relocation_set->_fragments[next];
         return true;
       }
     }
   } else {
-    if (_next < nforwardings) {
-      *forwarding = _relocation_set->_forwardings[_next++];
+    if (_next < nfragments) {
+      *fragment = _relocation_set->_fragments[_next++];
       return true;
     }
   }

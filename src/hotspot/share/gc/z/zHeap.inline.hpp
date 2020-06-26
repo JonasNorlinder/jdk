@@ -25,8 +25,7 @@
 #define SHARE_GC_Z_ZHEAP_INLINE_HPP
 
 #include "gc/z/zAddress.inline.hpp"
-#include "gc/z/zForwarding.inline.hpp"
-#include "gc/z/zForwardingTable.inline.hpp"
+#include "gc/z/zCompactTable.inline.hpp"
 #include "gc/z/zHash.inline.hpp"
 #include "gc/z/zHeap.hpp"
 #include "gc/z/zMark.inline.hpp"
@@ -34,6 +33,9 @@
 #include "gc/z/zPage.inline.hpp"
 #include "gc/z/zPageTable.inline.hpp"
 #include "utilities/debug.hpp"
+#include <map>
+
+class ZFragment;
 
 inline ZHeap* ZHeap::heap() {
   assert(_heap != NULL, "Not initialized");
@@ -95,18 +97,21 @@ inline void ZHeap::undo_alloc_object_for_relocation(uintptr_t addr, size_t size)
 inline uintptr_t ZHeap::relocate_object(uintptr_t addr) {
   assert(ZGlobalPhase == ZPhaseRelocate, "Relocate not allowed");
 
-  ZForwarding* const forwarding = _forwarding_table.get(addr);
-  if (forwarding == NULL) {
+  ZFragment* const fragment = _fragment_table.get(addr);
+  if (fragment == NULL) {
+    //assert(false, "");
     // Not forwarding
     return ZAddress::good(addr);
   }
 
   // Relocate object
-  const bool retained = forwarding->retain_page();
-  const uintptr_t new_addr = _relocate.relocate_object(forwarding, addr);
+  const bool retained = fragment->retain_page();
+  uintptr_t new_addr = _relocate.relocate_object(fragment, addr);
   if (retained) {
-    forwarding->release_page();
+    fragment->release_page();
   }
+
+  // assert(fragment->new_page()->is_in(new_addr), "");
 
   return new_addr;
 }
@@ -115,14 +120,14 @@ inline uintptr_t ZHeap::remap_object(uintptr_t addr) {
   assert(ZGlobalPhase == ZPhaseMark ||
          ZGlobalPhase == ZPhaseMarkCompleted, "Forward not allowed");
 
-  ZForwarding* const forwarding = _forwarding_table.get(addr);
-  if (forwarding == NULL) {
+  ZFragment* const fragment = _fragment_table.get(addr);
+  if (fragment == NULL) {
     // Not forwarding
     return ZAddress::good(addr);
   }
 
   // Forward object
-  return _relocate.forward_object(forwarding, addr);
+  return _relocate.forward_object(fragment, addr);
 }
 
 inline bool ZHeap::is_alloc_stalled() const {
@@ -134,7 +139,15 @@ inline void ZHeap::check_out_of_memory() {
 }
 
 inline bool ZHeap::is_oop(uintptr_t addr) const {
-  return ZAddress::is_good(addr) && is_object_aligned(addr) && is_in(addr);
+  bool is_good = ZAddress::is_good(addr);
+  bool object_aligned = is_object_aligned(addr);
+  bool in = is_in(addr);
+
+  //assert(is_good, "is good");
+  //assert(object_aligned, "object aligned");
+  //assert(in, "is in");
+
+  return is_good && object_aligned && in;
 }
 
 #endif // SHARE_GC_Z_ZHEAP_INLINE_HPP

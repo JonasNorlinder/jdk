@@ -22,35 +22,107 @@
  */
 
 #include "precompiled.hpp"
-#include "gc/z/zForwarding.hpp"
+#include "gc/z/zCompact.hpp"
 #include "gc/z/zRelocationSet.hpp"
+#include "gc/z/zAllocationFlags.hpp"
+#include "gc/z/zHeap.inline.hpp"
 #include "memory/allocation.hpp"
 
+class ZLiveMapIterator : public ObjectClosure {
+private:
+  ZHeap* _heap;
+  ZFragment* _fragment;
+  ZPage *_current_page;
+  ZAllocationFlags _flags;
+  ZFragmentEntry *_current_entry;
+
+public:
+  ZLiveMapIterator(ZFragment* fragment, ZPage* new_page, ZAllocationFlags flags) :
+    _heap(ZHeap::heap()),
+    _fragment(fragment),
+    _current_page(new_page),
+    _flags(flags),
+    _current_entry(fragment->entries_begin())
+  {
+    _current_entry->set_live_bytes_before_fragment(_current_page->top() - _current_page->start());
+  }
+
+  ZPage *current_page() const {
+    return _current_page;
+  }
+
+  virtual void do_object(oop obj) {
+    const uintptr_t from_offset = ZAddress::offset(ZOop::to_address(obj));
+    const size_t obj_size = ZUtils::object_size(ZAddress::good(from_offset));
+    const size_t internal_index = _fragment->offset_to_internal_index(from_offset);
+    ZFragmentEntry* entry_for_offset = _fragment->find(from_offset);
+
+    // Copy liveness information
+    entry_for_offset->set_liveness(internal_index);
+
+    // Store object size
+    entry_for_offset->set_size_bit(internal_index, obj_size);
+
+    // Allocate for object
+    if (_current_entry < entry_for_offset) {
+      _current_entry = entry_for_offset;
+      _current_entry->set_live_bytes_before_fragment(_current_page->top() - _current_page->start());
+    }
+
+    uintptr_t allocated_obj = _current_page->alloc_object(obj_size);
+
+    if (allocated_obj == 0) {
+      _current_page = ZHeap::heap()->alloc_page(_current_page->type(), _current_page->size(), _flags);
+      allocated_obj = _current_page->alloc_object(obj_size);
+      _fragment->add_page_break(_current_page, from_offset);
+    }
+  }
+};
+
 ZRelocationSet::ZRelocationSet() :
-    _forwardings(NULL),
-    _nforwardings(0) {}
+  _fragments(NULL),
+  _nfragments(0) {}
 
 void ZRelocationSet::populate(ZPage* const* group0, size_t ngroup0,
                               ZPage* const* group1, size_t ngroup1) {
-  _nforwardings = ngroup0 + ngroup1;
-  _forwardings = REALLOC_C_HEAP_ARRAY(ZForwarding*, _forwardings, _nforwardings, mtGC);
+  _nfragments = ngroup0 + ngroup1;
+  _fragments = REALLOC_C_HEAP_ARRAY(ZFragment*, _fragments, _nfragments, mtGC);
 
-  size_t j = 0;
+  size_t fragment_index = 0;
 
-  // Populate group 0
+  ZAllocationFlags flags;
+  flags.set_relocation();
+  flags.set_non_blocking();
+  flags.set_worker_thread();
+
+  // Populate group 0 (medium)
+  ZPage* current_new_page = ngroup0 > 0 ? ZHeap::heap()->alloc_page(group0[0]->type(), group0[0]->size(), flags) : NULL;
   for (size_t i = 0; i < ngroup0; i++) {
-    _forwardings[j++] = ZForwarding::create(group0[i]);
+    ZPage* old_page = group0[i];
+    ZFragment* fragment = ZFragment::create(old_page, current_new_page);
+
+    ZLiveMapIterator cl = ZLiveMapIterator(fragment, current_new_page, flags);
+    old_page->_livemap.iterate(&cl, ZAddress::good(old_page->start()), old_page->object_alignment_shift());
+    current_new_page = cl.current_page();
+    _fragments[fragment_index++] = fragment;
   }
 
-  // Populate group 1
+  // Populate group 1 (small)
+  current_new_page = ngroup1 > 0 ? ZHeap::heap()->alloc_page(group1[0]->type(), group1[0]->size(), flags) : NULL;
   for (size_t i = 0; i < ngroup1; i++) {
-    _forwardings[j++] = ZForwarding::create(group1[i]);
+    ZPage* old_page = group1[i];
+    ZFragment* fragment = ZFragment::create(old_page, current_new_page);
+
+    ZLiveMapIterator cl = ZLiveMapIterator(fragment, current_new_page, flags);
+    old_page->_livemap.iterate(&cl, ZAddress::good(old_page->start()), old_page->object_alignment_shift());
+    current_new_page = cl.current_page();
+    _fragments[fragment_index++] = fragment;
   }
 }
 
 void ZRelocationSet::reset() {
-  for (size_t i = 0; i < _nforwardings; i++) {
-    ZForwarding::destroy(_forwardings[i]);
-    _forwardings[i] = NULL;
+  for (size_t i = 0; i < _nfragments; i++) {
+    ZFragment::destroy(_fragments[i]);
+    _fragments[i] = NULL;
   }
 }
