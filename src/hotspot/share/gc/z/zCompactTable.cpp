@@ -1,9 +1,9 @@
 #include "precompiled.hpp"
-#include "gc/z/zFragmentTable.inline.hpp"
+#include "gc/z/zCompactTable.inline.hpp"
 #include "gc/z/zGlobals.hpp"
 #include "gc/z/zGranuleMap.inline.hpp"
 #include "utilities/debug.hpp"
-#include "gc/z/zFragment.inline.hpp"
+#include "gc/z/zCompact.inline.hpp"
 
 ZFragmentTable::ZFragmentTable() :
   _map(ZAddressOffsetMax) {}

@@ -1,8 +1,8 @@
 #ifndef SHARE_GC_Z_ZFRAGMENTTABLEENTRY_INLINE_HPP
 #define SHARE_GC_Z_ZFRAGMENTTABLEENTRY_INLINE_HPP
 
-#include "gc/z/zFragment.inline.hpp"
-#include "gc/z/zFragmentEntry.hpp"
+#include "gc/z/zCompact.inline.hpp"
+#include "gc/z/zCompactEntry.hpp"
 #include "gc/z/zGlobals.hpp"
 #include "utilities/count_leading_zeros.hpp"
 #include <iostream>

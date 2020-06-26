@@ -1,7 +1,7 @@
 #ifndef SHARE_GC_Z_ZFRAGMENT_HPP
 #define SHARE_GC_Z_ZFRAGMENT_HPP
 
-#include "gc/z/zFragmentEntry.hpp"
+#include "gc/z/zCompactEntry.hpp"
 #include "gc/z/zAttachedArray.hpp"
 #include "gc/z/zVirtualMemory.hpp"
 
