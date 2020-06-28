@@ -15,7 +15,6 @@
 inline ZPage* ZFragment::new_page(uintptr_t from_offset) {
   if (!_new_page) {
     alloc_page(&_new_page);
-    assert(_new_page, "out-of-memory not handled yet");
     return _new_page;
   }
 
@@ -23,22 +22,18 @@ inline ZPage* ZFragment::new_page(uintptr_t from_offset) {
       _first_from_offset_mapped_to_snd_page > 0) {
     if (!_snd_page) {
       alloc_page(&_snd_page);
-      assert(_snd_page, "out-of-memory not handled yet");
     }
     return _snd_page;
   } else {
     if (!_new_page && continues_from_previous_fragment()) {
       // Case 1: Overlapping
       _new_page = _previous_fragment->last_page();
-      assert(false, "");
     }
     else {
       // Case 0: I am first
       alloc_page(&_new_page);
-      assert(_new_page, "out-of-memory not handled yet");
     }
   }
-  assert(false, "");
   return _new_page;
 }
 
