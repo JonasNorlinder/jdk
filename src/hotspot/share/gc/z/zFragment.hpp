@@ -18,29 +18,27 @@ private:
   const size_t            _object_alignment_shift;
   ZPage*                  _old_page;
   const uintptr_t         _ops;
+  const uint8_t           _page_type;
+  const size_t            _page_size;
   const ZVirtualMemory    _old_virtual;
   ZPage*                  _new_page;
-  ZPage*                  _snd_page;
   volatile uint32_t       _refcount;
-  uint64_t                _conversion_constant;
-  uintptr_t               _first_from_offset_mapped_to_snd_page;
-  size_t                  _page_break_entry_index;
-  size_t                  _page_break_entry_internal_index;
 
   bool inc_refcount();
   bool dec_refcount();
 
-  ZFragment(ZPage* old_page, ZPage* new_page, size_t nentries);
+  void alloc_page(ZPage** page);
+
+  ZFragment(ZPage* old_page, size_t nentries);
 
 public:
-  static ZFragment*  create(ZPage* old_page, ZPage* new_page);
+  static ZFragment*  create(ZPage* old_page);
   static void        destroy(ZFragment* fragment);
 
   const uintptr_t old_start();
   const size_t old_size();
   ZPage* old_page() const;
-  ZPage* new_page(uintptr_t from_offset) const;
-  void set_new_page(ZPage* page);
+  ZPage* new_page(uintptr_t from_offset);
 
   ZFragmentEntry* find(uintptr_t from_addr) const;
   uintptr_t to_offset(uintptr_t from_offset);
@@ -49,19 +47,12 @@ public:
   size_t offset_to_index(uintptr_t from_offset) const;
   size_t offset_to_internal_index(uintptr_t from_offset) const;
 
-  bool is_on_page_break(ZFragmentEntry *entry);
-  bool is_on_snd_page(uintptr_t from_offset) const;
-  size_t page_break_entry_index() const;
-  size_t page_break_entry_internal_index() const;
-
   bool retain_page();
   void release_page();
 
   size_t entries_count() const;
   ZFragmentEntry* entries_begin() const;
   ZFragmentEntry* entries_end();
-
-  void add_page_break(ZPage *snd_page, uintptr_t first_on_snd);
 };
 
 #endif // SHARE_GC_Z_ZFRAGMENT_HPP

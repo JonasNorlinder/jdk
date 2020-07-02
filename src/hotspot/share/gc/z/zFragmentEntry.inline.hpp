@@ -126,10 +126,6 @@ inline uint32_t ZFragmentEntry::live_bytes_on_fragment(uintptr_t old_page, uintp
   uint32_t live_bytes = 0;
   bool count = false;
 
-  if (fragment->is_on_page_break(this) && fragment->is_on_snd_page(from_offset)) {
-    cursor = fragment->page_break_entry_internal_index();
-  }
-
   for (; cursor<index; cursor = cursor + 1) {
     bool live = get_liveness(cursor);
     if (live && !count) { // first encounter
