@@ -105,7 +105,7 @@ inline size_t ZFragment::offset_to_internal_index(uintptr_t from_offset) const {
 }
 
 inline uintptr_t ZFragment::from_offset(size_t entry_index, size_t internal_index) const {
-  return _ops + (entry_index * 256) + (internal_index * 8);
+  return _ops + (entry_index << 8) + (internal_index << 3);
 }
 
 inline ZFragmentEntry* ZFragment::find(uintptr_t from_offset) const {
