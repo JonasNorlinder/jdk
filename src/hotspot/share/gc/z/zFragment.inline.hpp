@@ -13,11 +13,6 @@
 #include <iostream>
 
 inline ZPage* ZFragment::new_page(uintptr_t from_offset) {
-  if (!_new_page) {
-    alloc_page(&_new_page);
-    return _new_page;
-  }
-
   if (from_offset >= _first_from_offset_mapped_to_snd_page &&
       _first_from_offset_mapped_to_snd_page > 0) {
     if (!_snd_page) {
@@ -29,7 +24,7 @@ inline ZPage* ZFragment::new_page(uintptr_t from_offset) {
       // Case 1: Overlapping
       _new_page = _previous_fragment->last_page();
     }
-    else {
+    else if (!_new_page) {
       // Case 0: I am first
       alloc_page(&_new_page);
     }
