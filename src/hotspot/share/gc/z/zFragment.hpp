@@ -4,12 +4,12 @@
 #include "gc/z/zFragmentEntry.hpp"
 #include "gc/z/zAttachedArray.hpp"
 #include "gc/z/zVirtualMemory.hpp"
+#include "gc/z/zAllocationFlags.hpp"
 
 class ZPage;
 
 class ZFragment {
   friend class ZFragmentEntry;
-  friend class ZRelocate;
 
 private:
   typedef ZAttachedArray<ZFragment, ZFragmentEntry> AttachedArray;
@@ -18,11 +18,13 @@ private:
   const size_t            _object_alignment_shift;
   ZPage*                  _old_page;
   const uintptr_t         _ops;
+  const uint8_t           _page_type;
+  const size_t            _page_size;
+  ZFragment*              _previous_fragment;
   const ZVirtualMemory    _old_virtual;
   ZPage*                  _new_page;
   ZPage*                  _snd_page;
   volatile uint32_t       _refcount;
-  uint64_t                _conversion_constant;
   uintptr_t               _first_from_offset_mapped_to_snd_page;
   size_t                  _page_break_entry_index;
   size_t                  _page_break_entry_internal_index;
@@ -30,16 +32,21 @@ private:
   bool inc_refcount();
   bool dec_refcount();
 
-  ZFragment(ZPage* old_page, ZPage* new_page, size_t nentries);
+  void alloc_page(ZPage** page);
+  inline bool continues_from_previous_fragment() const;
+  ZFragment(ZPage* old_page, size_t nentries, ZFragment* previous_fragment);
 
 public:
-  static ZFragment*  create(ZPage* old_page, ZPage* new_page);
+  static ZFragment*  create(ZPage* old_page, ZFragment* previous_fragment);
   static void        destroy(ZFragment* fragment);
 
+  void reset();
+
+  ZPage* last_page();
   const uintptr_t old_start();
   const size_t old_size();
   ZPage* old_page() const;
-  ZPage* new_page(uintptr_t from_offset) const;
+  ZPage* new_page(uintptr_t from_offset);
   void set_new_page(ZPage* page);
 
   ZFragmentEntry* find(uintptr_t from_addr) const;
@@ -61,7 +68,7 @@ public:
   ZFragmentEntry* entries_begin() const;
   ZFragmentEntry* entries_end();
 
-  void add_page_break(ZPage *snd_page, uintptr_t first_on_snd);
+  void add_page_break(uintptr_t first_on_snd);
 };
 
 #endif // SHARE_GC_Z_ZFRAGMENT_HPP
