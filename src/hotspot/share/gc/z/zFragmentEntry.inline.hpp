@@ -4,7 +4,7 @@
 #include "gc/z/zFragment.inline.hpp"
 #include "gc/z/zFragmentEntry.hpp"
 #include "gc/z/zGlobals.hpp"
-#include "utilities/count_leading_zeros.hpp"
+#include "utilities/count_trailing_zeros.hpp"
 #include <iostream>
 
 inline void ZFragmentEntry::clear() {
@@ -78,18 +78,22 @@ inline void ZFragmentEntry::set_size_bit(size_t index, size_t size) {
 }
 
 inline int32_t ZFragmentEntry::get_next_live_object(ZFragmentObjectCursor cursor, bool count) const {
-  if (cursor > 31) {
-    return cursor;
+  if (cursor > 30) {
+    return -1;
   }
 
-  for (;cursor<32;cursor++) {
-    bool live = get_liveness(cursor);
+  int32_t mask = (~0U) << (cursor + 1);
+  uint32_t entry = _entry & mask;
+  if (entry == 0) return -1;
+  cursor = count_trailing_zeros(entry);
 
-    if (live && !count) { // first encounter
-      return cursor;
-    } else if (live && count) { // last encounter
-      count = false;
-    }
+  if (!count) { // first encounter
+    return cursor;
+  } else if (count) { // last encounter
+    int32_t mask = (~0U) << (cursor + 1);
+    uint32_t entry = _entry & mask;
+    if (entry == 0) return -1;
+    cursor = count_trailing_zeros(entry);
   }
 
   return cursor < 32 ? cursor : -1;
