@@ -60,27 +60,9 @@ inline void ZFragmentEntry::set_live_bytes_before_fragment(uint32_t value) {
   _entry = field_live_bytes::encode(value) | (_entry & 0x80000000FFFFFFFF);
 }
 
-inline uint32_t ZFragmentEntry::calc_fragment_live_bytes(ZFragment* fragment, size_t entry_index) const {
-  assert(!copied(), "Updating not allowed");
-  uint32_t live_bytes = 0;
-
-  // Simplest implmentation as possible. NOT EFFICENT
-  // TODO: change to count_leading_zeros
-  size_t internal_index = 0;
-  while (internal_index < 32) {
-    if (get_liveness(internal_index)) {
-      uintptr_t offset = fragment->from_offset(entry_index, internal_index);
-      live_bytes += ZUtils::object_size(ZAddress::good(offset));
-    }
-
-    internal_index++;
-  }
-  return live_bytes;
-}
-
 inline void ZFragmentEntry::set_size_bit(size_t index, size_t size) {
   assert(!copied(), "Updating not allowed");
-  const size_t size_index = index + size / 8 - 1;
+  const size_t size_index = index + (size >> 3) - 1;
 
   // If size_index is larger than the current entry, that
   // would imply that this is the last living object on this entry.
@@ -95,27 +77,22 @@ inline void ZFragmentEntry::set_size_bit(size_t index, size_t size) {
   set_liveness(size_index % 32);
 }
 
-inline int32_t ZFragmentEntry::get_next_live_object(ZFragmentObjectCursor* cursor) const {
-  ZFragmentObjectCursor local_cursor = *cursor;
-  if (local_cursor > 31) {
-    return -1;
+inline int32_t ZFragmentEntry::get_next_live_object(ZFragmentObjectCursor cursor, bool count) const {
+  if (cursor > 31) {
+    return cursor;
   }
-  int32_t object = -1;
-  bool count = false;
 
-  for (;local_cursor<32;local_cursor++) {
-    bool live = get_liveness(local_cursor);
+  for (;cursor<32;cursor++) {
+    bool live = get_liveness(cursor);
 
     if (live && !count) { // first encounter
-      object = local_cursor;
-      count = true;
+      return cursor;
     } else if (live && count) { // last encounter
-      *cursor = local_cursor + 1;
-      return object;
+      count = false;
     }
   }
-  *cursor = local_cursor;
-  return object;
+
+  return cursor < 32 ? cursor : -1;
 }
 
 inline uint32_t ZFragmentEntry::live_bytes_on_fragment(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment) {
@@ -143,7 +120,6 @@ inline uint32_t ZFragmentEntry::live_bytes_on_fragment(uintptr_t old_page, uintp
 }
 
 inline size_t ZFragmentEntry::fragment_internal_index(uintptr_t old_page, uintptr_t from_offset) const {
-  assert(from_offset >= old_page, "XXX");
   return ((from_offset - old_page) >> 3) % 32;
 }
 
