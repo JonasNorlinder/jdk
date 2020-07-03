@@ -108,18 +108,20 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
 
   // Reallocate all live objects within fragment
   ZFragmentObjectCursor cursor = 0;
-  int32_t internal_index=-1;
   size_t i = 0;
   size_t offset_index = fragment->offset_to_index(from_offset);
 
-  do {
-    internal_index = entry->get_next_live_object(&cursor);
-    if (internal_index == -1 && i == 0) {
+  while (cursor < 32) {
+    cursor = i > 0 ?
+      entry->get_next_live_object(cursor, true) :
+      entry->get_next_live_object(cursor, false);
+    if (cursor == -1 && i == 0) {
       assert(false, "");
-    } else if (internal_index == -1) {
+    } else if (cursor == -1 || cursor > 32) {
       break;
     }
-    uintptr_t from_offset_entry = fragment->from_offset(offset_index, (size_t)internal_index);
+    uintptr_t from_offset_entry = fragment->from_offset(offset_index, (size_t)cursor);
+    cursor++;
 
     uintptr_t to_offset = fragment->to_offset(from_offset_entry, entry);
     size_t size = ZUtils::object_size(ZAddress::good(from_offset_entry));
@@ -132,7 +134,7 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
                         size);
     i++;
     if (i > 31) assert(false, "");
-  } while (internal_index != -1);
+  }
   entry->set_copied();
 
   return to_offset;

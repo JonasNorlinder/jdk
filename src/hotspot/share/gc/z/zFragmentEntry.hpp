@@ -18,20 +18,19 @@
 //    |
 //    * 62-32 Amount of Live Bytes (31-bits)
 
-typedef size_t ZFragmentObjectCursor;
+typedef int32_t ZFragmentObjectCursor;
 
 class ZFragment;
 
 class ZFragmentEntry {
 private:
+  uint64_t         _entry;
 
   typedef ZBitField<uint64_t, uint32_t, 0, 32>     field_live_bits;
   typedef ZBitField<uint64_t, uint32_t, 32, 31>    field_live_bytes;
   typedef ZBitField<uint64_t, bool, 63, 1>         field_copied;
 
 public:
-  uint64_t         _entry;
-
   ZFragmentEntry() :
     _entry(0) {}
 
@@ -42,7 +41,7 @@ public:
   bool get_liveness(size_t index) const;
   void set_liveness(size_t index);
 
-  int32_t get_next_live_object(ZFragmentObjectCursor* cursor) const;
+  int32_t get_next_live_object(ZFragmentObjectCursor cursor, bool count) const;
   size_t fragment_internal_index(uintptr_t old_page, uintptr_t from_offset) const;
 
   uint32_t live_bytes_before_fragment() const;
@@ -52,7 +51,6 @@ public:
   void set_copied();
 
   uint32_t live_bytes_on_fragment(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment);
-  uint32_t calc_fragment_live_bytes(ZFragment* fragment, size_t index) const;
 
 };
 
