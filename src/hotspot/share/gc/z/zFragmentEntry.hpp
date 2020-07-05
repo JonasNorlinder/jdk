@@ -31,6 +31,7 @@ private:
   typedef ZBitField<uint64_t, bool, 63, 1>         field_copied;
 
   ZFragmentObjectCursor move_cursor(ZFragmentObjectCursor cursor, bool count) const;
+  size_t get_size(ZFragmentObjectCursor cursor) const;
 
 public:
   ZFragmentEntry() :
@@ -53,6 +54,7 @@ public:
   void set_copied();
 
   uint32_t live_bytes_on_fragment(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment);
+  uint32_t live_bytes_on_fragment_n(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment);
 
 };
 
