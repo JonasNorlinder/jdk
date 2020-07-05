@@ -82,7 +82,8 @@ inline int32_t ZFragmentEntry::get_next_live_object(ZFragmentObjectCursor cursor
     return -1;
   }
 
-  int32_t mask = (~0U) << (cursor + 1);
+  cursor = !count ? cursor : cursor + 1;
+  int32_t mask = cursor < 32 ? (~0U) << (cursor) : 0U;
   uint32_t entry = _entry & mask;
   if (entry == 0) return -1;
   cursor = count_trailing_zeros(entry);
@@ -90,7 +91,8 @@ inline int32_t ZFragmentEntry::get_next_live_object(ZFragmentObjectCursor cursor
   if (!count) { // first encounter
     return cursor;
   } else if (count) { // last encounter
-    int32_t mask = (~0U) << (cursor + 1);
+    cursor++;
+    int32_t mask = cursor < 32 ? (~0U) << (cursor) : 0U;
     uint32_t entry = _entry & mask;
     if (entry == 0) return -1;
     cursor = count_trailing_zeros(entry);
