@@ -77,28 +77,25 @@ inline void ZFragmentEntry::set_size_bit(size_t index, size_t size) {
   set_liveness(size_index % 32);
 }
 
-inline int32_t ZFragmentEntry::get_next_live_object(ZFragmentObjectCursor cursor, bool count) const {
-  if (cursor > 30) {
-    return -1;
-  }
 
+inline ZFragmentObjectCursor ZFragmentEntry::move_cursor(ZFragmentObjectCursor cursor, bool count) const {
   cursor = !count ? cursor : cursor + 1;
   int32_t mask = cursor < 32 ? (~0U) << (cursor) : 0U;
   uint32_t entry = _entry & mask;
   if (entry == 0) return -1;
   cursor = count_trailing_zeros(entry);
+  return cursor;
+}
+
+inline int32_t ZFragmentEntry::get_next_live_object(ZFragmentObjectCursor cursor, bool count) const {
+  cursor = move_cursor(cursor, count);
+  if (cursor == -1) return -1; // No more live objects
 
   if (!count) { // first encounter
     return cursor;
-  } else if (count) { // last encounter
-    cursor++;
-    int32_t mask = cursor < 32 ? (~0U) << (cursor) : 0U;
-    uint32_t entry = _entry & mask;
-    if (entry == 0) return -1;
-    cursor = count_trailing_zeros(entry);
   }
 
-  return cursor < 32 ? cursor : -1;
+  return move_cursor(cursor, count);
 }
 
 inline uint32_t ZFragmentEntry::live_bytes_on_fragment(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment) {

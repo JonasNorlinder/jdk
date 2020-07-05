@@ -115,9 +115,7 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
     cursor = i > 0 ?
       entry->get_next_live_object(cursor, true) :
       entry->get_next_live_object(cursor, false);
-    if (cursor == -1 && i == 0) {
-      assert(false, "");
-    } else if (cursor == -1 || cursor > 32) {
+    if (cursor == -1) {
       break;
     }
     uintptr_t from_offset_entry = fragment->from_offset(offset_index, (size_t)cursor);
@@ -132,7 +130,6 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
                         to_good,
                         size);
     i++;
-    if (i > 31) assert(false, "");
   }
   entry->set_copied();
 
