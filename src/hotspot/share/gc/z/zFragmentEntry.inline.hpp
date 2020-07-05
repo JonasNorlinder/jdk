@@ -74,7 +74,7 @@ inline void ZFragmentEntry::set_size_bit(size_t index, size_t size) {
     return;
   }
 
-  set_liveness(size_index % 32);
+  set_liveness(size_index & 31);
 }
 
 
@@ -151,7 +151,7 @@ inline uint32_t ZFragmentEntry::live_bytes_on_fragment(uintptr_t old_page, uintp
 }
 
 inline size_t ZFragmentEntry::fragment_internal_index(uintptr_t old_page, uintptr_t from_offset) const {
-  return ((from_offset - old_page) >> 3) % 32;
+  return ((from_offset - old_page) >> 3) & 31;
 }
 
 #endif // SHARE_GC_Z_ZFRAGMENTTABLEENTRY_INLINE_HPP
