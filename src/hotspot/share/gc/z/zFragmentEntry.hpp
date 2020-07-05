@@ -30,6 +30,7 @@ private:
   typedef ZBitField<uint64_t, uint32_t, 32, 31>    field_live_bytes;
   typedef ZBitField<uint64_t, bool, 63, 1>         field_copied;
 
+
 public:
   ZFragmentEntry() :
     _entry(0) {}

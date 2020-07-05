@@ -121,7 +121,6 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
       break;
     }
     uintptr_t from_offset_entry = fragment->from_offset(offset_index, (size_t)cursor);
-    cursor++;
 
     uintptr_t to_offset = fragment->to_offset(from_offset_entry, entry);
     size_t size = ZUtils::object_size(ZAddress::good(from_offset_entry));
