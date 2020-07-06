@@ -12,7 +12,7 @@
 #include "gc/z/zThread.inline.hpp"
 #include <iostream>
 
-inline ZPage* ZFragment::new_page(uintptr_t from_offset) {
+inline const ZPage* ZFragment::new_page(uintptr_t from_offset) {
   if (!_new_page) {
     alloc_page(&_new_page);
   }
@@ -31,7 +31,7 @@ inline void ZFragment::alloc_page(ZPage** page) {
 
   ZPage* p = heap->alloc_page(_page_type, _page_size, flags);
   assert(p != NULL, "out-of-memory handling not supported yet");
-  p->set_top(_page_size);
+  p->move_top(_page_size);
   // Get NULL => success
   ZPage* page_prev = Atomic::cmpxchg(page, (ZPage*)NULL, p);
   if (page_prev) {
@@ -104,15 +104,15 @@ inline uintptr_t ZFragment::from_offset(size_t entry_index, size_t internal_inde
   return _ops + (entry_index << 8) + (internal_index << 3);
 }
 
-inline ZFragmentEntry* ZFragment::find(uintptr_t from_offset) const {
+inline ZFragmentEntry* ZFragment::find(uintptr_t from_offset) {
   return entries_begin() + offset_to_index(from_offset);
 }
 
-inline uintptr_t ZFragment::to_offset(uintptr_t from_offset) {
+inline const uintptr_t ZFragment::to_offset(const uintptr_t from_offset) {
   return to_offset(from_offset, find(from_offset));
 }
 
-inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* entry) {
+inline const uintptr_t ZFragment::to_offset(const uintptr_t from_offset, const ZFragmentEntry* entry) {
   size_t live_bytes_before_fragment = entry->live_bytes_before_fragment();
 
   return

@@ -31,7 +31,6 @@ class ObjectClosure;
 
 class ZLiveMap {
   friend class ZLiveMapTest;
-  friend class ZFragment;
 
 private:
   static const size_t nsegments = 64;
