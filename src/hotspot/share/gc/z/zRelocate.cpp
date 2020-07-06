@@ -38,7 +38,6 @@
 #include "gc/z/zThreadLocalAllocBuffer.hpp"
 #include "gc/z/zWorkers.hpp"
 #include "logging/log.hpp"
-#include <iostream>
 
 static const ZStatCounter ZCounterRelocationContention("Contention", "Relocation Contention", ZStatUnitOpsPerSecond);
 
@@ -96,8 +95,7 @@ void ZRelocate::start() {
 uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_offset) const {
   ZHeap* heap = ZHeap::heap();
   // Lookup fragment entry
-  ZFragmentEntry* entry = fragment->find(from_offset);
-  assert(entry != NULL, "");
+  ZFragmentEntry* const entry = fragment->find(from_offset);
   const uintptr_t to_offset = fragment->to_offset(from_offset, entry);
 
   if (entry->copied()) {

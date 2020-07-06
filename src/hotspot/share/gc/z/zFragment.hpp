@@ -36,11 +36,11 @@ public:
   const uintptr_t old_start();
   const size_t old_size();
   ZPage* old_page() const;
-  ZPage* new_page(uintptr_t from_offset);
+  const ZPage* new_page(uintptr_t from_offset);
 
-  ZFragmentEntry* find(uintptr_t from_addr) const;
-  uintptr_t to_offset(uintptr_t from_offset);
-  uintptr_t to_offset(uintptr_t from_offset, ZFragmentEntry* entry);
+  ZFragmentEntry* find(const uintptr_t from_addr);
+  const uintptr_t to_offset(const uintptr_t from_offset);
+  const uintptr_t to_offset(const uintptr_t from_offset, const ZFragmentEntry* entry);
   uintptr_t from_offset(size_t entry_index, size_t internal_index) const;
   size_t offset_to_index(uintptr_t from_offset) const;
   size_t offset_to_internal_index(uintptr_t from_offset) const;

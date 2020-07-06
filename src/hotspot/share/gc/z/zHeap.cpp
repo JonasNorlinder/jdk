@@ -36,7 +36,6 @@
 #include "gc/z/zStat.hpp"
 #include "gc/z/zThread.inline.hpp"
 #include "gc/z/zVerify.hpp"
-#include "gc/z/zGranuleMap.hpp"
 #include "gc/z/zWorkers.inline.hpp"
 #include "logging/log.hpp"
 #include "memory/iterator.hpp"
@@ -46,7 +45,6 @@
 #include "runtime/thread.hpp"
 #include "utilities/debug.hpp"
 #include "utilities/powerOfTwo.hpp"
-#include <iostream>
 
 static const ZStatSampler ZSamplerHeapUsedBeforeMark("Memory", "Heap Used Before Mark", ZStatUnitBytes);
 static const ZStatSampler ZSamplerHeapUsedAfterMark("Memory", "Heap Used After Mark", ZStatUnitBytes);
@@ -217,7 +215,6 @@ void ZHeap::out_of_memory() {
 
 ZPage* ZHeap::alloc_page(uint8_t type, size_t size, ZAllocationFlags flags) {
   ZPage* const page = _page_allocator.alloc_page(type, size, flags);
-
   if (page != NULL) {
     // Insert page table entry
     _page_table.insert(page);
