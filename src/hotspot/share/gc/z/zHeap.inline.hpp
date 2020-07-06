@@ -33,7 +33,6 @@
 #include "gc/z/zPage.inline.hpp"
 #include "gc/z/zPageTable.inline.hpp"
 #include "utilities/debug.hpp"
-#include <map>
 
 class ZFragment;
 
@@ -99,7 +98,6 @@ inline uintptr_t ZHeap::relocate_object(uintptr_t addr) {
 
   ZFragment* const fragment = _fragment_table.get(addr);
   if (fragment == NULL) {
-    //assert(false, "");
     // Not forwarding
     return ZAddress::good(addr);
   }
@@ -110,8 +108,6 @@ inline uintptr_t ZHeap::relocate_object(uintptr_t addr) {
   if (retained) {
     fragment->release_page();
   }
-
-  // assert(fragment->new_page()->is_in(new_addr), "");
 
   return new_addr;
 }
@@ -139,15 +135,7 @@ inline void ZHeap::check_out_of_memory() {
 }
 
 inline bool ZHeap::is_oop(uintptr_t addr) const {
-  bool is_good = ZAddress::is_good(addr);
-  bool object_aligned = is_object_aligned(addr);
-  bool in = is_in(addr);
-
-  //assert(is_good, "is good");
-  //assert(object_aligned, "object aligned");
-  //assert(in, "is in");
-
-  return is_good && object_aligned && in;
+  return ZAddress::is_good(addr) && is_object_aligned(addr) && is_in(addr);
 }
 
 #endif // SHARE_GC_Z_ZHEAP_INLINE_HPP

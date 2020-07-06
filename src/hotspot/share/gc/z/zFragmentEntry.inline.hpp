@@ -4,7 +4,7 @@
 #include "gc/z/zFragment.inline.hpp"
 #include "gc/z/zFragmentEntry.hpp"
 #include "gc/z/zGlobals.hpp"
-#include "utilities/count_leading_zeros.hpp"
+#include "utilities/count_trailing_zeros.hpp"
 #include <iostream>
 
 inline void ZFragmentEntry::clear() {
@@ -12,19 +12,6 @@ inline void ZFragmentEntry::clear() {
 }
 
 inline bool ZFragmentEntry::get_liveness(size_t index) const {
-  // Right shift live bits in order of size index,
-  // then perform bitwise AND using 1
-  //
-  // Example:     Index: 14
-  //          Live bits: 0000 0000 0010 0100 0100 0000 0000 0000
-  // [Right shift live bits 14 times] =>
-  //          Live bits: 0000 0000 0000 0000 0000 0000 1001 0001
-  // [Bitwise AND with 1] =>
-  //
-  //   0000 0000 0000 0000 0000 0000 1001 0001
-  //                                       AND
-  //   0000 0000 0000 0000 0000 0000 0000 0001
-  // = 0000 0000 0000 0000 0000 0000 0000 0001 = True
   return (_entry >> index) & 1UL;
 }
 
@@ -74,28 +61,57 @@ inline void ZFragmentEntry::set_size_bit(size_t index, size_t size) {
     return;
   }
 
-  set_liveness(size_index % 32);
+  set_liveness(size_index & 31);
+}
+
+
+inline ZFragmentObjectCursor ZFragmentEntry::move_cursor(ZFragmentObjectCursor cursor, bool count) const {
+  cursor = !count ? cursor : cursor + 1;
+  int32_t mask = cursor < 32 ? (~0U) << (cursor) : 0U;
+  uint32_t entry = _entry & mask;
+  if (entry == 0) return -1;
+  cursor = count_trailing_zeros(entry);
+  return cursor;
 }
 
 inline int32_t ZFragmentEntry::get_next_live_object(ZFragmentObjectCursor cursor, bool count) const {
-  if (cursor > 31) {
+  cursor = move_cursor(cursor, count);
+  if (cursor == -1) return -1; // No more live objects
+
+  if (!count) { // first encounter
     return cursor;
   }
 
-  for (;cursor<32;cursor++) {
-    bool live = get_liveness(cursor);
-
-    if (live && !count) { // first encounter
-      return cursor;
-    } else if (live && count) { // last encounter
-      count = false;
-    }
-  }
-
-  return cursor < 32 ? cursor : -1;
+  return move_cursor(cursor, count);
 }
 
-inline uint32_t ZFragmentEntry::live_bytes_on_fragment(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment) {
+inline const size_t ZFragmentEntry::get_size(int32_t cursor) const {
+  int32_t mask = cursor < 32 ? (~0U) << (cursor + 1) : 0U;
+  uint32_t entry = _entry & mask;
+  if (entry == 0) return 0;
+  return (count_trailing_zeros(entry) - cursor + 1) << 3;
+}
+
+inline const uint32_t ZFragmentEntry::live_bytes_on_fragment_n(uintptr_t old_page,
+                                                       uintptr_t from_offset,
+                                                       ZFragment *fragment) const {
+  size_t index = fragment_internal_index(old_page, from_offset);
+  assert(index < 32, "index out of bounds");
+
+  uint32_t cursor = move_cursor(0, false);
+  if (index == 0 || cursor == index) return 0;
+  uint32_t live_bytes = get_size(cursor);
+  cursor = move_cursor(cursor, true);
+
+  for (cursor = move_cursor(cursor, true); cursor<index; cursor = move_cursor(cursor, true)) {
+    live_bytes += get_size(cursor);
+    cursor = move_cursor(cursor, true);
+  }
+
+  return live_bytes;
+}
+
+inline const uint32_t ZFragmentEntry::live_bytes_on_fragment(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment) const {
   size_t index = fragment_internal_index(old_page, from_offset);
   assert(index < 32, "index out of bounds");
 
@@ -116,11 +132,13 @@ inline uint32_t ZFragmentEntry::live_bytes_on_fragment(uintptr_t old_page, uintp
     }
   }
 
-  return live_bytes << 3;
+  uint32_t result = live_bytes << 3;
+  assert(result==live_bytes_on_fragment_n(old_page, from_offset, fragment), "");
+  return result;
 }
 
 inline size_t ZFragmentEntry::fragment_internal_index(uintptr_t old_page, uintptr_t from_offset) const {
-  return ((from_offset - old_page) >> 3) % 32;
+  return ((from_offset - old_page) >> 3) & 31;
 }
 
 #endif // SHARE_GC_Z_ZFRAGMENTTABLEENTRY_INLINE_HPP

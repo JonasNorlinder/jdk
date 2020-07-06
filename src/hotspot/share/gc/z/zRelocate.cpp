@@ -38,7 +38,6 @@
 #include "gc/z/zThreadLocalAllocBuffer.hpp"
 #include "gc/z/zWorkers.hpp"
 #include "logging/log.hpp"
-#include <iostream>
 
 static const ZStatCounter ZCounterRelocationContention("Contention", "Relocation Contention", ZStatUnitOpsPerSecond);
 
@@ -96,8 +95,7 @@ void ZRelocate::start() {
 uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_offset) const {
   ZHeap* heap = ZHeap::heap();
   // Lookup fragment entry
-  ZFragmentEntry* entry = fragment->find(from_offset);
-  assert(entry != NULL, "");
+  ZFragmentEntry* const entry = fragment->find(from_offset);
   const uintptr_t to_offset = fragment->to_offset(from_offset, entry);
 
   if (entry->copied()) {
@@ -109,31 +107,27 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
   // Reallocate all live objects within fragment
   ZFragmentObjectCursor cursor = 0;
   size_t i = 0;
-  size_t offset_index = fragment->offset_to_index(from_offset);
+  const size_t offset_index = fragment->offset_to_index(from_offset);
 
   while (cursor < 32) {
     cursor = i > 0 ?
       entry->get_next_live_object(cursor, true) :
       entry->get_next_live_object(cursor, false);
-    if (cursor == -1 && i == 0) {
-      assert(false, "");
-    } else if (cursor == -1 || cursor > 32) {
+    if (cursor == -1) {
       break;
     }
-    uintptr_t from_offset_entry = fragment->from_offset(offset_index, (size_t)cursor);
-    cursor++;
+    const uintptr_t from_offset_entry = fragment->from_offset(offset_index, (size_t)cursor);
 
-    uintptr_t to_offset = fragment->to_offset(from_offset_entry, entry);
-    size_t size = ZUtils::object_size(ZAddress::good(from_offset_entry));
+    const uintptr_t to_offset = fragment->to_offset(from_offset_entry, entry);
+    const size_t size = ZUtils::object_size(ZAddress::good(from_offset_entry));
 
-    uintptr_t from_good = ZAddress::good(from_offset_entry);
-    uintptr_t to_good = ZAddress::good(to_offset);
+    const uintptr_t from_good = ZAddress::good(from_offset_entry);
+    const uintptr_t to_good = ZAddress::good(to_offset);
 
     ZUtils::object_copy(from_good,
                         to_good,
                         size);
     i++;
-    if (i > 31) assert(false, "");
   }
   entry->set_copied();
 
