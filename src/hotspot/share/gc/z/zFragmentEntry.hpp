@@ -53,7 +53,7 @@ public:
   bool copied() const;
   void set_copied();
 
-  uint32_t live_bytes_on_fragment(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment);
+  uint32_t live_bytes_on_fragment(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment); // To be replaced by *_n below
   uint32_t live_bytes_on_fragment_n(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment);
 
 };
