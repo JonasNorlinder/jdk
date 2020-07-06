@@ -25,7 +25,6 @@
 #define SHARE_GC_Z_ZPAGE_HPP
 
 #include "gc/z/zList.hpp"
-#include "gc/z/zFragment.hpp"
 #include "gc/z/zLiveMap.hpp"
 #include "gc/z/zPhysicalMemory.hpp"
 #include "gc/z/zVirtualMemory.hpp"
@@ -34,9 +33,7 @@
 class ZPage : public CHeapObj<mtGC> {
   friend class VMStructs;
   friend class ZList<ZPage>;
-  friend class ZFragment;
   friend class ZRelocationSet;
-  friend class ZFragmentTable;
 private:
   uint8_t            _type;
   uint8_t            _numa_id;
@@ -70,7 +67,7 @@ public:
   uintptr_t end() const;
   size_t size() const;
   uintptr_t top() const;
-  void set_top(uintptr_t size);
+  void move_top(uintptr_t size);
   size_t remaining() const;
 
   const ZPhysicalMemory& physical_memory() const;

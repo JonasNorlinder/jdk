@@ -26,7 +26,6 @@
 
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/macros.hpp"
-
 #include CPU_HEADER(gc/z/zGlobals)
 
 // Collector name
@@ -150,6 +149,5 @@ const size_t      ZMarkTerminateFlushMax        = 3;
 
 // Try complete mark timeout
 const uint64_t    ZMarkCompleteTimeout          = 1; // ms
-
 
 #endif // SHARE_GC_Z_ZGLOBALS_HPP

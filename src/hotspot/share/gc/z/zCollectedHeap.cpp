@@ -351,5 +351,5 @@ void ZCollectedHeap::verify(VerifyOption option /* ignored */) {
 }
 
 bool ZCollectedHeap::is_oop(oop object) const {
-  return true; //_heap.is_oop(ZOop::to_address(object));
+  return _heap.is_oop(ZOop::to_address(object));
 }
