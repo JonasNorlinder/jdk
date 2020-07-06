@@ -1,6 +1,7 @@
 #ifndef SHARE_GC_Z_ZFRAGMENT_HPP
 #define SHARE_GC_Z_ZFRAGMENT_HPP
 
+
 #include "gc/z/zFragmentEntry.hpp"
 #include "gc/z/zAttachedArray.hpp"
 #include "gc/z/zVirtualMemory.hpp"
@@ -8,9 +9,6 @@
 class ZPage;
 
 class ZFragment {
-  friend class ZFragmentEntry;
-  friend class ZRelocate;
-
 private:
   typedef ZAttachedArray<ZFragment, ZFragmentEntry> AttachedArray;
 
@@ -50,7 +48,6 @@ public:
   bool retain_page();
   void release_page();
 
-  size_t entries_count() const;
   ZFragmentEntry* entries_begin() const;
   ZFragmentEntry* entries_end();
 };

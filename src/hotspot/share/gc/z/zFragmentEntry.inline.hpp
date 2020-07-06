@@ -12,19 +12,6 @@ inline void ZFragmentEntry::clear() {
 }
 
 inline bool ZFragmentEntry::get_liveness(size_t index) const {
-  // Right shift live bits in order of size index,
-  // then perform bitwise AND using 1
-  //
-  // Example:     Index: 14
-  //          Live bits: 0000 0000 0010 0100 0100 0000 0000 0000
-  // [Right shift live bits 14 times] =>
-  //          Live bits: 0000 0000 0000 0000 0000 0000 1001 0001
-  // [Bitwise AND with 1] =>
-  //
-  //   0000 0000 0000 0000 0000 0000 1001 0001
-  //                                       AND
-  //   0000 0000 0000 0000 0000 0000 0000 0001
-  // = 0000 0000 0000 0000 0000 0000 0000 0001 = True
   return (_entry >> index) & 1UL;
 }
 

@@ -51,10 +51,6 @@ inline const size_t ZFragment::old_size() {
   return _old_virtual.size();
 }
 
-inline size_t ZFragment::entries_count() const {
-  return _entries.length();
-}
-
 inline ZFragmentEntry* ZFragment::entries_begin() const {
   return _entries(this);
 }
