@@ -13,23 +13,19 @@ ZFragment::ZFragment(ZPage* old_page, size_t nentries)
     _old_page(old_page),
     _ops(old_page->start()),
     _page_type(old_page->type()),
+    _previous_fragment(NULL),
     _page_size(old_page->size()),
     _old_virtual(old_page->virtual_memory()),
     _new_page(NULL),
-    _refcount(1) {}
+    _refcount(1),
+    _first_from_offset_mapped_to_snd_page(0),
+    _page_break_entry_index(0) {}
 
 ZFragment* ZFragment::create(ZPage* old_page) {
   assert(old_page != NULL, "");
   assert(old_page->live_objects() > 0, "Invalid value");
   const size_t size = old_page->size();
-
-  // Use each bit in a 32 bit int to store liveness information,
-  // where each bit spans one word in the page. One word = 8 bytes.
-  //
-  // Example: Page size is small: 2 MB,
-  // then requiered number of entries to describe the liveness,
-  // information is thus 2 MB / (32 words * 8 bytes) = 8 192
-  const size_t nentries = size / 256;
+  const size_t nentries = size / 256 + 1;
   ZFragment* fragment = ::new (AttachedArray::alloc(nentries)) ZFragment(old_page, nentries);
 
   return fragment;
