@@ -13,10 +13,44 @@
 #include <iostream>
 
 inline const ZPage* ZFragment::new_page(uintptr_t from_offset) {
-  if (!_new_page) {
-    alloc_page(&_new_page);
+  bool is_on_first = from_offset < _first_from_offset_mapped_to_snd_page ||
+                                   _first_from_offset_mapped_to_snd_page == 0;
+  if (is_on_first) {
+    if (!_new_page) {
+      if (continues_from_previous_fragment()) {
+        _new_page = _previous_fragment->last_page();
+      } else {
+        alloc_page(&_new_page);
+      }
+    }
+    assert(_new_page != NULL, "");
+    return _new_page;
+  } else {
+    if (!_snd_page) {
+      alloc_page(&_snd_page);
+    }
+    assert(_snd_page != NULL, "");
+    return _snd_page;
   }
-  return _new_page;
+}
+
+inline bool ZFragment::continues_from_previous_fragment() const {
+  return _previous_fragment != NULL;
+}
+
+inline ZPage* ZFragment::last_page() {
+  if (_first_from_offset_mapped_to_snd_page == 0) {
+    if (!_new_page) {
+      if (continues_from_previous_fragment()) {
+        _new_page = _previous_fragment->last_page();
+      } else {
+        alloc_page(&_new_page);
+      }
+      return _new_page;
+    }
+  }
+  if (!_snd_page) alloc_page(&_snd_page);
+  return _snd_page;
 }
 
 inline void ZFragment::alloc_page(ZPage** page) {
@@ -28,15 +62,17 @@ inline void ZFragment::alloc_page(ZPage** page) {
   if (ZThread::is_worker()) {
     flags.set_worker_thread();
   }
-
+  heap->lock.lock();
   ZPage* p = heap->alloc_page(_page_type, _page_size, flags);
   assert(p != NULL, "out-of-memory handling not supported yet");
   p->move_top(_page_size);
   // Get NULL => success
-  ZPage* page_prev = Atomic::cmpxchg(page, (ZPage*)NULL, p);
+  /*ZPage* page_prev = Atomic::cmpxchg(page, (ZPage*)NULL, p);
   if (page_prev) {
     heap->undo_alloc_page(p);
-  }
+    }*/
+  if (!*page) *page = p;
+  heap->lock.unlock();
 }
 
 inline ZPage* ZFragment::old_page() const {
@@ -93,7 +129,12 @@ inline void ZFragment::release_page() {
 }
 
 inline size_t ZFragment::offset_to_index(uintptr_t from_offset) const {
-  return (from_offset - _ops) >> 8;
+  size_t index = (from_offset - _ops) >> 8;
+  if (from_offset >= _first_from_offset_mapped_to_snd_page &&
+      _first_from_offset_mapped_to_snd_page) {
+    index++;
+  }
+  return index;
 }
 
 inline size_t ZFragment::offset_to_internal_index(uintptr_t from_offset) const {
@@ -119,6 +160,12 @@ inline const uintptr_t ZFragment::to_offset(const uintptr_t from_offset, const Z
     new_page(from_offset)->start() +
     live_bytes_before_fragment +
     entry->live_bytes_on_fragment(_ops, from_offset, this);
+}
+
+inline void ZFragment::add_page_break(uintptr_t first_on_snd, ZFragment* previous) {
+  _previous_fragment = previous;
+  _first_from_offset_mapped_to_snd_page = first_on_snd;
+  _page_break_entry_index = offset_to_index(first_on_snd);
 }
 
 #endif // SHARE_GC_Z_ZFRAGMENT_INLINE_HPP

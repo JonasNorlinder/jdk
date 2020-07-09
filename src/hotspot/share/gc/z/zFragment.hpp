@@ -1,7 +1,6 @@
 #ifndef SHARE_GC_Z_ZFRAGMENT_HPP
 #define SHARE_GC_Z_ZFRAGMENT_HPP
 
-
 #include "gc/z/zFragmentEntry.hpp"
 #include "gc/z/zAttachedArray.hpp"
 #include "gc/z/zVirtualMemory.hpp"
@@ -17,10 +16,14 @@ private:
   ZPage*                  _old_page;
   const uintptr_t         _ops;
   const uint8_t           _page_type;
+  ZFragment*              _previous_fragment;
   const size_t            _page_size;
   const ZVirtualMemory    _old_virtual;
   ZPage*                  _new_page;
+  ZPage*                  _snd_page;
   volatile uint32_t       _refcount;
+  size_t _first_from_offset_mapped_to_snd_page;
+  size_t _page_break_entry_index;
 
   bool inc_refcount();
   bool dec_refcount();
@@ -50,6 +53,10 @@ public:
 
   ZFragmentEntry* entries_begin() const;
   ZFragmentEntry* entries_end();
+
+  ZPage* last_page();
+  bool continues_from_previous_fragment() const;
+  void add_page_break(uintptr_t first_on_snd, ZFragment* previous);
 };
 
 #endif // SHARE_GC_Z_ZFRAGMENT_HPP
