@@ -26,7 +26,8 @@
 
 #include "gc/z/zAttachedArray.hpp"
 #include "gc/z/zCollectedHeap.hpp"
-#include "gc/z/zForwarding.hpp"
+#include "gc/z/zFragment.hpp"
+#include "gc/z/zFragmentEntry.hpp"
 #include "gc/z/zGranuleMap.hpp"
 #include "gc/z/zHeap.hpp"
 #include "gc/z/zPageAllocator.hpp"
@@ -54,7 +55,7 @@ public:
 };
 
 typedef ZGranuleMap<ZPage*> ZGranuleMapForPageTable;
-typedef ZAttachedArray<ZForwarding, ZForwardingEntry> ZAttachedArrayForForwarding;
+typedef ZAttachedArray<ZFragment, ZFragmentEntry> ZAttachedArrayForFragment;
 
 #define VM_STRUCTS_ZGC(nonstatic_field, volatile_nonstatic_field, static_field)                      \
   static_field(ZGlobalsForVMStructs,            _instance_p,          ZGlobalsForVMStructs*)         \
@@ -85,9 +86,7 @@ typedef ZAttachedArray<ZForwarding, ZForwardingEntry> ZAttachedArrayForForwardin
   nonstatic_field(ZGranuleMapForPageTable,      _map,                 ZPage** const)                 \
                                                                                                      \
   nonstatic_field(ZVirtualMemory,               _start,               const uintptr_t)               \
-  nonstatic_field(ZVirtualMemory,               _end,                 const uintptr_t)               \
-                                                                                                     \
-  nonstatic_field(ZForwarding,                  _entries,             const ZAttachedArrayForForwarding)
+  nonstatic_field(ZVirtualMemory,               _end,                 const uintptr_t)
 
 #define VM_INT_CONSTANTS_ZGC(declare_constant, declare_constant_with_value)                          \
   declare_constant(ZPhaseRelocate)                                                                   \
@@ -113,12 +112,11 @@ typedef ZAttachedArray<ZForwarding, ZForwardingEntry> ZAttachedArrayForForwardin
   declare_toplevel_type(ZPage)                                                                       \
   declare_toplevel_type(ZPageAllocator)                                                              \
   declare_toplevel_type(ZPageTable)                                                                  \
-  declare_toplevel_type(ZAttachedArrayForForwarding)                                                 \
   declare_toplevel_type(ZGranuleMapForPageTable)                                                     \
   declare_toplevel_type(ZVirtualMemory)                                                              \
-  declare_toplevel_type(ZForwardingTable)                                                            \
-  declare_toplevel_type(ZForwarding)                                                                 \
-  declare_toplevel_type(ZForwardingEntry)                                                            \
+  declare_toplevel_type(ZFragmentTable)                                                            \
+  declare_toplevel_type(ZFragment)                                                                 \
+  declare_toplevel_type(ZFragmentEntry)                                                            \
   declare_toplevel_type(ZPhysicalMemoryManager)
 
 #endif // SHARE_GC_Z_VMSTRUCTS_Z_HPP

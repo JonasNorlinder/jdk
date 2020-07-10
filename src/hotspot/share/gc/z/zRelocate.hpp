@@ -28,7 +28,7 @@
 #include "gc/z/zWorkers.hpp"
 #include "memory/allocation.hpp"
 
-class ZForwarding;
+class ZFragment;
 
 class ZRelocate {
   friend class ZRelocateTask;
@@ -36,15 +36,15 @@ class ZRelocate {
 private:
   ZWorkers* const _workers;
 
-  ZForwarding* forwarding_for_page(ZPage* page) const;
-  uintptr_t relocate_object_inner(ZForwarding* forwarding, uintptr_t from_index, uintptr_t from_offset) const;
+  ZFragment* forwarding_for_page(ZPage* page) const;
+  uintptr_t relocate_object_inner(ZFragment* fragment, uintptr_t from_offset) const;
   bool work(ZRelocationSetParallelIterator* iter);
 
 public:
   ZRelocate(ZWorkers* workers);
 
-  uintptr_t relocate_object(ZForwarding* forwarding, uintptr_t from_addr) const;
-  uintptr_t forward_object(ZForwarding* forwarding, uintptr_t from_addr) const;
+  uintptr_t relocate_object(ZFragment* fragment, uintptr_t from_addr) const;
+  uintptr_t forward_object(ZFragment* fragment, uintptr_t from_addr) const;
 
   void start();
   bool relocate(ZRelocationSet* relocation_set);

@@ -24,7 +24,8 @@
 #include "precompiled.hpp"
 #include "gc/z/zAddress.inline.hpp"
 #include "gc/z/zBarrier.inline.hpp"
-#include "gc/z/zForwarding.inline.hpp"
+#include "gc/z/zFragment.inline.hpp"
+#include "gc/z/zFragmentEntry.inline.hpp"
 #include "gc/z/zHeap.hpp"
 #include "gc/z/zOopClosures.inline.hpp"
 #include "gc/z/zPage.hpp"
@@ -91,91 +92,88 @@ void ZRelocate::start() {
   _workers->run_parallel(&task);
 }
 
-uintptr_t ZRelocate::relocate_object_inner(ZForwarding* forwarding, uintptr_t from_index, uintptr_t from_offset) const {
-  ZForwardingCursor cursor;
+uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_offset) const {
+  ZHeap* heap = ZHeap::heap();
+  // Lookup fragment entry
+  ZFragmentEntry* const entry = fragment->find(from_offset);
+  const uintptr_t to_offset = fragment->to_offset(from_offset, entry);
 
-  // Lookup forwarding entry
-  const ZForwardingEntry entry = forwarding->find(from_index, &cursor);
-  if (entry.populated() && entry.from_index() == from_index) {
+  if (entry->copied()) {
     // Already relocated, return new address
-    return entry.to_offset();
-  }
-
-  assert(ZHeap::heap()->is_object_live(ZAddress::good(from_offset)), "Should be live");
-
-  if (forwarding->is_pinned()) {
-    // In-place forward
-    return forwarding->insert(from_index, from_offset, &cursor);
-  }
-
-  // Allocate object
-  const uintptr_t from_good = ZAddress::good(from_offset);
-  const size_t size = ZUtils::object_size(from_good);
-  const uintptr_t to_good = ZHeap::heap()->alloc_object_for_relocation(size);
-  if (to_good == 0) {
-    // Failed, in-place forward
-    return forwarding->insert(from_index, from_offset, &cursor);
-  }
-
-  // Copy object
-  ZUtils::object_copy(from_good, to_good, size);
-
-  // Insert forwarding entry
-  const uintptr_t to_offset = ZAddress::offset(to_good);
-  const uintptr_t to_offset_final = forwarding->insert(from_index, to_offset, &cursor);
-  if (to_offset_final == to_offset) {
-    // Relocation succeeded
     return to_offset;
   }
+  assert(ZHeap::heap()->is_object_live(ZAddress::good(from_offset)), "Should be live");
 
-  // Relocation contention
-  ZStatInc(ZCounterRelocationContention);
-  log_trace(gc)("Relocation contention, thread: " PTR_FORMAT " (%s), forwarding: " PTR_FORMAT
-                ", entry: " SIZE_FORMAT ", oop: " PTR_FORMAT ", size: " SIZE_FORMAT,
-                ZThread::id(), ZThread::name(), p2i(forwarding), cursor, from_good, size);
+  // Reallocate all live objects within fragment
+  ZFragmentObjectCursor cursor = 0;
+  size_t i = 0;
+  const size_t offset_index = fragment->offset_to_index(from_offset);
 
-  // Try undo allocation
-  ZHeap::heap()->undo_alloc_object_for_relocation(to_good, size);
+  while (cursor < 32) {
+    cursor = i > 0 ?
+      entry->get_next_live_object(cursor, true) :
+      entry->get_next_live_object(cursor, false);
+    if (cursor == -1) {
+      break;
+    }
+    const uintptr_t from_offset_entry = fragment->from_offset(offset_index, (size_t)cursor);
 
-  return to_offset_final;
+    const uintptr_t to_offset = fragment->to_offset(from_offset_entry, entry);
+    const size_t size = ZUtils::object_size(ZAddress::good(from_offset_entry));
+
+    const uintptr_t from_good = ZAddress::good(from_offset_entry);
+    const uintptr_t to_good = ZAddress::good(to_offset);
+
+    ZUtils::object_copy(from_good,
+                        to_good,
+                        size);
+    i++;
+  }
+  entry->set_copied();
+
+  return to_offset;
 }
 
-uintptr_t ZRelocate::relocate_object(ZForwarding* forwarding, uintptr_t from_addr) const {
+uintptr_t ZRelocate::relocate_object(ZFragment* fragment, uintptr_t from_addr) const {
   const uintptr_t from_offset = ZAddress::offset(from_addr);
-  const uintptr_t from_index = (from_offset - forwarding->start()) >> forwarding->object_alignment_shift();
-  const uintptr_t to_offset = relocate_object_inner(forwarding, from_index, from_offset);
+  ZHeap* heap = ZHeap::heap();
+  ZFragmentEntry *e = fragment->find(from_offset);
+
+  heap->lock_map.lock(from_offset);
+  if (e->copied()) {
+    uintptr_t to_good = ZAddress::good(fragment->to_offset(from_offset, e));
+    heap->lock_map.unlock(from_offset);
+    return to_good;
+  }
+
+  const uintptr_t to_offset = relocate_object_inner(fragment, from_offset);
+  heap->lock_map.unlock(from_offset);
 
   if (from_offset == to_offset) {
     // In-place forwarding, pin page
-    forwarding->set_pinned();
+    assert(false, "not supported yet");
   }
-
-  return ZAddress::good(to_offset);
+  uintptr_t to_good = ZAddress::good(to_offset);
+  return to_good;
 }
 
-uintptr_t ZRelocate::forward_object(ZForwarding* forwarding, uintptr_t from_addr) const {
-  const uintptr_t from_offset = ZAddress::offset(from_addr);
-  const uintptr_t from_index = (from_offset - forwarding->start()) >> forwarding->object_alignment_shift();
-  const ZForwardingEntry entry = forwarding->find(from_index);
-
-  assert(entry.populated(), "Should be forwarded");
-  assert(entry.from_index() == from_index, "Should be forwarded");
-
-  return ZAddress::good(entry.to_offset());
+uintptr_t ZRelocate::forward_object(ZFragment* fragment, uintptr_t from_addr) const {
+  uintptr_t to_good = ZAddress::good(fragment->to_offset(ZAddress::offset(from_addr)));
+  return to_good;
 }
 
 class ZRelocateObjectClosure : public ObjectClosure {
 private:
   ZRelocate* const   _relocate;
-  ZForwarding* const _forwarding;
+  ZFragment* const   _fragment;
 
 public:
-  ZRelocateObjectClosure(ZRelocate* relocate, ZForwarding* forwarding) :
+  ZRelocateObjectClosure(ZRelocate* relocate, ZFragment* fragment) :
       _relocate(relocate),
-      _forwarding(forwarding) {}
+      _fragment(fragment) {}
 
   virtual void do_object(oop o) {
-    _relocate->relocate_object(_forwarding, ZOop::to_address(o));
+    _relocate->relocate_object(_fragment, ZOop::to_address(o));
   }
 };
 
@@ -183,22 +181,13 @@ bool ZRelocate::work(ZRelocationSetParallelIterator* iter) {
   bool success = true;
 
   // Relocate pages in the relocation set
-  for (ZForwarding* forwarding; iter->next(&forwarding);) {
+  for (ZFragment* fragment; iter->next(&fragment);) {
     // Relocate objects in page
-    ZRelocateObjectClosure cl(this, forwarding);
-    forwarding->page()->object_iterate(&cl);
+    ZRelocateObjectClosure cl(this, fragment);
+    fragment->old_page()->object_iterate(&cl);
 
-    if (ZVerifyForwarding) {
-      forwarding->verify();
-    }
-
-    if (forwarding->is_pinned()) {
-      // Relocation failed, page is now pinned
-      success = false;
-    } else {
-      // Relocation succeeded, release page
-      forwarding->release_page();
-    }
+    // Relocation succeeded, release page
+    fragment->release_page();
   }
 
   return success;

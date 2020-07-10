@@ -33,7 +33,7 @@
 class ZPage : public CHeapObj<mtGC> {
   friend class VMStructs;
   friend class ZList<ZPage>;
-
+  friend class ZRelocationSet;
 private:
   uint8_t            _type;
   uint8_t            _numa_id;
@@ -67,6 +67,7 @@ public:
   uintptr_t end() const;
   size_t size() const;
   uintptr_t top() const;
+  void move_top(uintptr_t size);
   size_t remaining() const;
 
   const ZPhysicalMemory& physical_memory() const;
