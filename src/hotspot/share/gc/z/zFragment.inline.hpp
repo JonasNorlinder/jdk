@@ -142,6 +142,8 @@ inline size_t ZFragment::offset_to_internal_index(uintptr_t from_offset) const {
 }
 
 inline uintptr_t ZFragment::from_offset(size_t entry_index, size_t internal_index) const {
+  if (entry_index > _page_break_entry_index &&
+      _first_from_offset_mapped_to_snd_page) entry_index--;
   return _ops + (entry_index << 8) + (internal_index << 3);
 }
 
