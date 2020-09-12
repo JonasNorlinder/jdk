@@ -62,17 +62,14 @@ inline void ZFragment::alloc_page(ZPage** page) {
   if (ZThread::is_worker()) {
     flags.set_worker_thread();
   }
-  heap->lock.lock();
   ZPage* p = heap->alloc_page(_page_type, _page_size, flags);
   assert(p != NULL, "out-of-memory handling not supported yet");
   p->move_top(_page_size);
   // Get NULL => success
-  /*ZPage* page_prev = Atomic::cmpxchg(page, (ZPage*)NULL, p);
+  ZPage* page_prev = Atomic::cmpxchg(page, (ZPage*)NULL, p);
   if (page_prev) {
     heap->undo_alloc_page(p);
-    }*/
-  if (!*page) *page = p;
-  heap->lock.unlock();
+  }
 }
 
 inline ZPage* ZFragment::old_page() const {

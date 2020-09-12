@@ -58,7 +58,7 @@ public:
   }
 
   bool move_top(size_t obj_size) {
-    if (_top + obj_size <= _page_size) {
+    if (_top + obj_size < _page_size) {
       _top += obj_size;
       return false;
     }
@@ -82,8 +82,9 @@ public:
 
     // Overlapping pages
     if (page_break) {
-      entry_for_offset = entry_for_offset + 1;
-      entry_for_offset->set_live_bytes_before_fragment(0);
+      entry_for_offset++;
+      _current_entry = entry_for_offset;
+      _current_entry->set_live_bytes_before_fragment(0);
       if (!_first_allocation) {
         _fragment->add_page_break(from_offset, _previous_fragment);
       }
@@ -137,6 +138,19 @@ void ZRelocationSet::populate(ZPage* const* group0, size_t ngroup0,
     previous_fragment_top = cl.current_top();
     previous_fragment = fragment;
     _fragments[fragment_index++] = fragment;
+
+    ZFragmentEntry* e = fragment->entries_begin();
+    size_t start = fragment->_previous_fragment ? previous_fragment_top : 0;
+    for(size_t curr_size=start,idx=0;e<fragment->entries_end();e++,idx++) {
+      size_t tmp = e->live_bytes_before_fragment();
+      if (idx == fragment->_page_break_entry_index && fragment->_first_from_offset_mapped_to_snd_page) {
+        assert(tmp == 0, "");
+      } else {
+        assert(curr_size <= tmp || tmp == 0, "");
+        assert(tmp < old_page->size(), "");
+      }
+      curr_size = tmp;
+    }
   }
 }
 

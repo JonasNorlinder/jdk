@@ -6,8 +6,10 @@
 #include "gc/z/zVirtualMemory.hpp"
 
 class ZPage;
+class ZRelocationSet;
 
 class ZFragment {
+  friend class ZRelocationSet;
 private:
   typedef ZAttachedArray<ZFragment, ZFragmentEntry> AttachedArray;
 
