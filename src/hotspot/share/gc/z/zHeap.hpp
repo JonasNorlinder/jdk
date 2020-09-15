@@ -123,6 +123,9 @@ private:
   ptr_to_ptr_t object_remaped{
                               400, std::hash<uintptr_t>(), std::equal_to<uintptr_t>(), map_allocator{a}
   };
+  ptr_to_ptr_t page_alloc{
+                              400, std::hash<uintptr_t>(), std::equal_to<uintptr_t>(), map_allocator{a}
+  };
 
   ptr_to_ptr_t object_expected_dest{
                                     3000, std::hash<uintptr_t>(), std::equal_to<uintptr_t>(), map_allocator{a}
@@ -146,7 +149,8 @@ public:
   ZLockMap lock_map;
   ZLock lock;
 
-
+  uintptr_t get_page(uintptr_t new_page) const;
+  void add_page(uintptr_t old_page, uintptr_t new_page);
   void add_expected(uintptr_t from, uintptr_t to);
   bool contains_expected(uintptr_t from) const;
   uintptr_t get_expected(uintptr_t from) const;

@@ -128,6 +128,15 @@ void ZHeap::add_remap(uintptr_t from, uintptr_t to) {
   object_remaped[to] = from;
 }
 
+void ZHeap::add_page(uintptr_t old_page, uintptr_t new_page) {
+  assert(page_alloc.count(new_page) == 0,"should not exist yet");
+  page_alloc[new_page] = old_page;
+}
+
+uintptr_t ZHeap::get_page(uintptr_t new_page) const {
+  return page_alloc.count(new_page) == 1 ? page_alloc.at(new_page) : 0;
+}
+
 void ZHeap::remove(uintptr_t from) {
   object_remaped.erase(from);
 }
@@ -474,6 +483,7 @@ void ZHeap::select_relocation_set() {
   // Select pages to relocate
   selector.select(&_relocation_set);
 
+  page_alloc.clear();
   object_remaped.clear();
   // Setup fragment table
   ZRelocationSetIterator rs_iter(&_relocation_set);

@@ -10,6 +10,8 @@ class ZRelocationSet;
 
 class ZFragment {
   friend class ZRelocationSet;
+  friend class ZFragmentEntry;
+
 private:
   typedef ZAttachedArray<ZFragment, ZFragmentEntry> AttachedArray;
 
@@ -26,6 +28,7 @@ private:
   volatile uint32_t       _refcount;
   size_t _first_from_offset_mapped_to_snd_page;
   size_t _page_break_entry_index;
+  bool _page_break;
 
   bool inc_refcount();
   bool dec_refcount();
