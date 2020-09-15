@@ -20,7 +20,8 @@ ZFragment::ZFragment(ZPage* old_page, size_t nentries)
     _snd_page(NULL),
     _refcount(1),
     _first_from_offset_mapped_to_snd_page(0),
-    _page_break_entry_index(0) {}
+    _page_break_entry_index(0),
+    _page_break(false) {}
 
 ZFragment* ZFragment::create(ZPage* old_page) {
   assert(old_page != NULL, "");

@@ -50,7 +50,7 @@ public:
     _top(previous_fragment_top),
     _first_allocation(true)
   {
-    _current_entry->set_live_bytes_before_fragment(0);
+    _current_entry->set_live_bytes_before_fragment(_top);
   }
 
   size_t current_top() {

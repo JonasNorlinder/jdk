@@ -123,7 +123,9 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
 
     const uintptr_t from_good = ZAddress::good(from_offset_entry);
     const uintptr_t to_good = ZAddress::good(to_offset);
-    heap->add_remap(from_offset_entry, to_offset);
+    assert(fragment->new_page(from_offset)->start() <= to_offset, "");
+    assert(fragment->new_page(from_offset)->start() + fragment->new_page(from_offset)->size() > to_offset, "");
+    //heap->add_remap(from_offset_entry, to_offset);
 
     ZUtils::object_copy(from_good,
                         to_good,

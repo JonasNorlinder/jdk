@@ -24,7 +24,6 @@ class ZFragment;
 
 class ZFragmentEntry {
 private:
-  uint64_t         _entry;
 
   typedef ZBitField<uint64_t, uint32_t, 0, 32>     field_live_bits;
   typedef ZBitField<uint64_t, uint32_t, 32, 31>    field_live_bytes;
@@ -34,6 +33,8 @@ private:
   const size_t get_size(ZFragmentObjectCursor cursor) const;
 
 public:
+  uint64_t         _entry;
+
   ZFragmentEntry() :
     _entry(0) {}
 
@@ -53,8 +54,8 @@ public:
   bool copied() const;
   void set_copied();
 
-  const uint32_t live_bytes_on_fragment(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment) const; // To be replaced by *_n below
-  const uint32_t live_bytes_on_fragment_n(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment) const;
+  const uint8_t live_bytes_on_fragment(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment) const; // To be replaced by *_n below
+  const uint8_t live_bytes_on_fragment_n(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment) const;
 
 };
 

@@ -92,10 +92,14 @@ inline const size_t ZFragmentEntry::get_size(int32_t cursor) const {
   return (count_trailing_zeros(entry) - cursor + 1) << 3;
 }
 
-inline const uint32_t ZFragmentEntry::live_bytes_on_fragment_n(uintptr_t old_page,
+inline const uint8_t ZFragmentEntry::live_bytes_on_fragment_n(uintptr_t old_page,
                                                        uintptr_t from_offset,
                                                        ZFragment *fragment) const {
   size_t index = fragment_internal_index(old_page, from_offset);
+  // if (index >= fragment->_page_break_entry_index &&
+  //     fragment->_first_from_offset_mapped_to_snd_page) {
+  //   ++index;
+  // }
   assert(index < 32, "index out of bounds");
 
   uint32_t cursor = move_cursor(0, false);
@@ -111,7 +115,7 @@ inline const uint32_t ZFragmentEntry::live_bytes_on_fragment_n(uintptr_t old_pag
   return live_bytes;
 }
 
-inline const uint32_t ZFragmentEntry::live_bytes_on_fragment(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment) const {
+inline const uint8_t ZFragmentEntry::live_bytes_on_fragment(uintptr_t old_page, uintptr_t from_offset, ZFragment* fragment) const {
   size_t index = fragment_internal_index(old_page, from_offset);
   assert(index < 32, "index out of bounds");
 
@@ -133,7 +137,7 @@ inline const uint32_t ZFragmentEntry::live_bytes_on_fragment(uintptr_t old_page,
   }
 
   uint32_t result = live_bytes << 3;
-  assert(result==live_bytes_on_fragment_n(old_page, from_offset, fragment), "");
+  //assert(result==live_bytes_on_fragment_n(old_page, from_offset, fragment), "");
   return result;
 }
 
