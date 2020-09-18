@@ -97,6 +97,42 @@ size_t ZHeap::heap_max_reserve_size() const {
   return MIN2(max_reserve_size, heap_max_size());
 }
 
+
+void ZHeap::add_remap(uintptr_t from, uintptr_t to) {
+  if (contains(from) || contains(to)) {
+    if (!(contains(from) && contains(to)) ||
+        !(get_remap(from) == to) ||
+        !(get_remap(to) == from)) {
+      uintptr_t f = contains(from) ? get_remap(from) : 0;
+      uintptr_t t = contains(to) ? get_remap(to) : 0;
+
+      std::cout << "from = " << std::hex << from << std::endl;
+      std::cout << "to = " << std::hex << to << std::endl;
+
+      std::cout << "get_remap(from) = " << std::hex << f << std::endl;
+      std::cout << "get_remap(to) = " << std::hex << t << std::endl;
+    }
+    assert(contains(from) && contains(to), "should already exist in both directions");
+    assert(get_remap(from) == to, "should be the same");
+    assert(get_remap(to) == from, "should be the same");
+    return;
+  }
+  object_remaped[from] = to;
+  object_remaped[to] = from;
+}
+
+void ZHeap::remove(uintptr_t from) {
+  object_remaped.erase(from);
+}
+
+bool ZHeap::contains(uintptr_t from) const {
+  return object_remaped.count(from) == 1;
+}
+
+uintptr_t ZHeap::get_remap(uintptr_t from) const {
+  return object_remaped.at(from);
+}
+
 bool ZHeap::is_initialized() const {
   return _page_allocator.is_initialized() && _mark.is_initialized();
 }
