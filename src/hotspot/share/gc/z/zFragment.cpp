@@ -15,6 +15,8 @@ ZFragment::ZFragment(ZPage* old_page, ZPage* new_page, size_t nentries)
     _old_virtual(old_page->virtual_memory()),
     _new_page(new_page),
     _snd_page(NULL),
+    _page_size(old_page->size()),
+    _page_type(old_page->type()),
     _refcount(1) {}
 
 ZFragment* ZFragment::create(ZPage* old_page, ZPage* new_page) {

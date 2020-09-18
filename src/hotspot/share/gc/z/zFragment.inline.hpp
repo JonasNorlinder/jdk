@@ -8,6 +8,7 @@
 #include "gc/z/zFragmentEntry.inline.hpp"
 #include "gc/z/zHeap.hpp"
 #include "gc/z/zHash.inline.hpp"
+#include "gc/z/zThread.hpp"
 #include "runtime/atomic.hpp"
 #include <iostream>
 
@@ -15,7 +16,22 @@ inline void ZFragment::set_new_page(ZPage* page) {
   _new_page = page;
 }
 
-inline ZPage* ZFragment::new_page(uintptr_t from_offset) const {
+inline ZPage* ZFragment::new_page(uintptr_t from_offset) {
+  ZHeap* heap = ZHeap::heap();
+  heap->lock.lock();
+  if (!_new_page) {
+    ZAllocationFlags flags;
+    flags.set_relocation();
+    flags.set_non_blocking();
+    if (ZThread::is_worker()) {
+      flags.set_worker_thread();
+    }
+    _new_page = heap->alloc_page(_page_type, _page_size, flags);
+    _new_page->set_top(_page_size);
+    std::cout << "post allocate!!!!" << std::endl;
+  }
+  heap->lock.unlock();
+
   if (_snd_page && from_offset >= _first_from_offset_mapped_to_snd_page) {
     return _snd_page;
   } else {
@@ -95,6 +111,7 @@ inline uintptr_t ZFragment::from_offset(size_t entry_index, size_t internal_inde
 inline ZFragmentEntry* ZFragment::find(uintptr_t from_offset) const {
   // TODO: Add explaination of magical 2 instrucion lookup
   //return (ZFragmentEntry*)(from_offset >> 5) - _conversion_constant + (uintptr_t)this->entries_begin();
+  if (_new_page) assert(offset_to_index(from_offset) < this->_new_page->size()/256, "");
   return entries_begin() + offset_to_index(from_offset);
 }
 
