@@ -47,6 +47,7 @@ private:
   uint64_t           _last_used;
   ZPhysicalMemory    _physical;
   ZListNode<ZPage>   _node;
+  bool _no_alloc = false;
 
   void assert_initialized() const;
 
@@ -60,6 +61,11 @@ public:
   ZPage(const ZVirtualMemory& vmem, const ZPhysicalMemory& pmem);
   ZPage(uint8_t type, const ZVirtualMemory& vmem, const ZPhysicalMemory& pmem);
   ~ZPage();
+
+  inline void set_no_alloc() {
+    _no_alloc = true;
+    set_top(size());
+  }
 
   uint32_t object_max_count() const;
   size_t object_alignment_shift() const;

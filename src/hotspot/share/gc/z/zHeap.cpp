@@ -252,8 +252,12 @@ void ZHeap::out_of_memory() {
 }
 
 ZPage* ZHeap::alloc_page(uint8_t type, size_t size, ZAllocationFlags flags) {
-  ZPage* const page = _page_allocator.alloc_page(type, size, flags);
+  return alloc_page(type, size, flags, false);
+}
 
+ZPage* ZHeap::alloc_page(uint8_t type, size_t size, ZAllocationFlags flags, bool no_alloc) {
+  ZPage* const page = _page_allocator.alloc_page(type, size, flags);
+  if (no_alloc) page->set_no_alloc();
   if (page != NULL) {
     // Insert page table entry
     _page_table.insert(page);
