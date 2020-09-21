@@ -28,7 +28,6 @@ inline ZPage* ZFragment::new_page(uintptr_t from_offset) {
     }
     _new_page = heap->alloc_page(_page_type, _page_size, flags);
     _new_page->set_top(_page_size);
-    std::cout << "post allocate!!!!" << std::endl;
   }
   heap->lock.unlock();
 
