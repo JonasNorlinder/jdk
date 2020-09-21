@@ -26,8 +26,9 @@ inline ZPage* ZFragment::new_page(uintptr_t from_offset) {
     if (ZThread::is_worker()) {
       flags.set_worker_thread();
     }
-    _new_page = heap->alloc_page(_page_type, _page_size, flags);
-    _new_page->set_top(_page_size);
+    _new_page = heap->alloc_page(_page_type, _page_size, flags, true /* owned by fragment */);
+    //_new_page->set_top(_page_size);
+    //std::cout << "post allocate!!!!" << std::endl;
   }
   heap->lock.unlock();
 
