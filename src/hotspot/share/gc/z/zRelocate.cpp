@@ -128,10 +128,20 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
     uintptr_t from_offset_entry = fragment->from_offset(offset_index, (size_t)internal_index);
 
     uintptr_t to_offset = fragment->to_offset(from_offset_entry, entry);
+    assert(to_offset == fragment->to_offset(from_offset_entry), "");
     size_t size = ZUtils::object_size(ZAddress::good(from_offset_entry));
 
     uintptr_t from_good = ZAddress::good(from_offset_entry);
     uintptr_t to_good = ZAddress::good(to_offset);
+
+    ZHeap::heap()->lock1.lock();
+    ZHeap::heap()->add_remap(from_offset_entry, to_offset);
+    assert(fragment->_new_page != NULL, "");
+    ZHeap::heap()->lock1.unlock();
+
+    if (fragment->old_size() == 33554432) {
+      std::cout << "write to " << to_offset << " (size " << size << ")" << std::endl;
+    }
 
     ZUtils::object_copy(from_good,
                         to_good,
@@ -147,12 +157,21 @@ uintptr_t ZRelocate::relocate_object_inner(ZFragment* fragment, uintptr_t from_o
 uintptr_t ZRelocate::relocate_object(ZFragment* fragment, uintptr_t from_addr) const {
   const uintptr_t from_offset = ZAddress::offset(from_addr);
   ZHeap* heap = ZHeap::heap();
+  heap->lock.lock();
   ZFragmentEntry *e = fragment->find(from_offset);
+
+  if (e->copied()) {
+    uintptr_t to_good = ZAddress::good(fragment->to_offset(from_offset, e));
+    heap->lock_map.unlock(from_offset);
+    heap->lock.unlock();
+    return to_good;
+  }
 
   heap->lock_map.lock(from_offset);
   if (e->copied()) {
     uintptr_t to_good = ZAddress::good(fragment->to_offset(from_offset, e));
     heap->lock_map.unlock(from_offset);
+    heap->lock.unlock();
     return to_good;
   }
 
@@ -164,6 +183,7 @@ uintptr_t ZRelocate::relocate_object(ZFragment* fragment, uintptr_t from_addr) c
     assert(false, "not supported yet");
   }
   uintptr_t to_good = ZAddress::good(to_offset);
+  heap->lock.unlock();
   return to_good;
 }
 

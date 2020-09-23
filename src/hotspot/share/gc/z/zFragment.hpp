@@ -25,9 +25,9 @@ private:
   const uint8_t           _page_type;
   volatile uint32_t       _refcount;
   uint64_t                _conversion_constant;
-  uintptr_t               _first_from_offset_mapped_to_snd_page;
-  size_t                  _page_break_entry_index;
-  size_t                  _page_break_entry_internal_index;
+  uintptr_t               _first_from_offset_mapped_to_snd_page = 0;
+  size_t                  _page_break_entry_index = 0;
+  size_t                  _page_break_entry_internal_index = 0;
 
   bool inc_refcount();
   bool dec_refcount();
@@ -35,6 +35,8 @@ private:
   ZFragment(ZPage* old_page, ZPage* new_page, size_t nentries);
 
 public:
+  size_t _objects=0;
+
   static ZFragment*  create(ZPage* old_page, ZPage* new_page);
   static void        destroy(ZFragment* fragment);
 
