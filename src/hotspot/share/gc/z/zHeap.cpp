@@ -106,11 +106,11 @@ void ZHeap::add_remap(uintptr_t from, uintptr_t to) {
       uintptr_t f = contains(from) ? get_remap(from) : 0;
       uintptr_t t = contains(to) ? get_remap(to) : 0;
 
-      std::cout << "from = " << std::hex << from << std::endl;
-      std::cout << "to = " << std::hex << to << std::endl;
+      std::cout << "from = " << from << std::endl;
+      std::cout << "to = " << to << std::endl;
 
-      std::cout << "get_remap(from) = " << std::hex << f << std::endl;
-      std::cout << "get_remap(to) = " << std::hex << t << std::endl;
+      std::cout << "get_remap(from) = " << f << std::endl;
+      std::cout << "get_remap(to) = " << t << std::endl;
     }
     assert(contains(from) && contains(to), "should already exist in both directions");
     assert(get_remap(from) == to, "should be the same");
@@ -131,6 +131,19 @@ bool ZHeap::contains(uintptr_t from) const {
 
 uintptr_t ZHeap::get_remap(uintptr_t from) const {
   return object_remaped.at(from);
+}
+
+void ZHeap::add_expected(uintptr_t from, uintptr_t offset) {
+  expected_dest_offset[from] = offset;
+}
+
+bool ZHeap::contains_expected(uintptr_t from) const {
+  return expected_dest_offset.count(from) == 1;
+}
+
+uintptr_t ZHeap::get_expected(uintptr_t from) const {
+  assert(contains_expected(from), "missing entry");
+  return expected_dest_offset.at(from);
 }
 
 bool ZHeap::is_initialized() const {
@@ -460,6 +473,9 @@ void ZHeap::select_relocation_set() {
 }
 
 void ZHeap::reset_relocation_set() {
+  std::cout << "cleared map" << std::endl;
+  expected_dest_offset.clear();
+  object_remaped.clear();
   // Reset fragment table
   ZRelocationSetIterator iter(&_relocation_set);
   for (ZFragment* fragment; iter.next(&fragment);) {

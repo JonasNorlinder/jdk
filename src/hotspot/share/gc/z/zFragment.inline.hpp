@@ -18,19 +18,23 @@ inline void ZFragment::set_new_page(ZPage* page) {
 
 inline ZPage* ZFragment::new_page(uintptr_t from_offset) {
   ZHeap* heap = ZHeap::heap();
-  heap->lock.lock();
   if (!_new_page) {
+    assert(heap->contains_expected(from_offset), "");
     ZAllocationFlags flags;
     flags.set_relocation();
     flags.set_non_blocking();
     if (ZThread::is_worker()) {
       flags.set_worker_thread();
     }
+    // std::cout << "from_offset = " << from_offset << std::endl;
+    // std::cout << "obj_size = " << ZUtils::object_size(ZAddress::good(from_offset)) << std::endl;
+    // std::cout << "page_size = " << _page_size << std::endl;
     _new_page = heap->alloc_page(_page_type, _page_size, flags, true /* owned by fragment */);
+    // std::cout << "_new_page->start() = " << _new_page->start() << std::endl;
     //_new_page->set_top(_page_size);
-    //std::cout << "post allocate!!!!" << std::endl;
+    // std::cout << "post allocate!!!!" << std::endl;
+    heap->add_remap((uintptr_t)this, (uintptr_t)_new_page);
   }
-  heap->lock.unlock();
 
   if (_snd_page && from_offset >= _first_from_offset_mapped_to_snd_page) {
     return _snd_page;
@@ -91,7 +95,11 @@ inline bool ZFragment::retain_page() {
 
 inline void ZFragment::release_page() {
   if (dec_refcount()) {
+    if (_page_size == 33554432) {
+      std::cout << "free page " << _ops << std::endl;
+    }
     ZHeap::heap()->free_page(const_cast<ZPage*>(_old_page), true /* reclaimed */);
+    ZHeap::heap()->remove(_ops);
     _old_page = NULL;
   }
 }
@@ -139,10 +147,27 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* ent
   size_t live_bytes_before_fragment = is_on_page_break(entry) && is_on_snd_page(from_offset) ?
     0 : entry->live_bytes_before_fragment();
 
-  return
-    new_page(from_offset)->start() +
+  if (_page_size == 33554432) {
+    live_bytes_before_fragment = entry->live_bytes_before_fragment();
+  }
+
+  uintptr_t result = new_page(from_offset)->start() +
     live_bytes_before_fragment +
     entry->live_bytes_on_fragment(_ops, from_offset, this);
+
+  if (_page_size == 33554432) {
+    // std::cout << "from_offset = " << from_offset << std::endl;
+    // std::cout << "new_page(from_offset)->start() = " << new_page(from_offset)->start() << std::endl;
+    // std::cout << "live_bytes_before_fragment = " << live_bytes_before_fragment << std::endl;
+    // std::cout << "entry->live_bytes_on_fragment(_ops, from_offset, this) = " << entry->live_bytes_on_fragment(_ops, from_offset, this) << std::endl;
+    // std::cout << std::endl;
+  }
+  if (_page_size == 33554432) {
+    uintptr_t expected_offset = ZHeap::heap()->get_expected(from_offset);
+    assert(expected_offset + new_page(from_offset)->start() == result, "");
+  }
+
+  return result;
 }
 
 inline void ZFragment::add_page_break(ZPage *snd_page, uintptr_t first_on_snd) {

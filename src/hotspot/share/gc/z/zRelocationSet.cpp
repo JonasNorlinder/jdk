@@ -36,7 +36,7 @@ private:
   size_t _top;
 
 public:
-  ZLiveMapIteratorPost(ZFragment* fragment, ZAllocationFlags flags) :
+  ZLiveMapIteratorPost(ZFragment* fragment) :
     _heap(ZHeap::heap()),
     _fragment(fragment),
     _current_entry(NULL),
@@ -44,9 +44,13 @@ public:
 
   virtual void do_object(oop obj) {
     const uintptr_t from_offset = ZAddress::offset(ZOop::to_address(obj));
+    std::cout << "OBJECT (" << from_offset << ")";
     const size_t obj_size = ZUtils::object_size(ZAddress::good(from_offset));
+    std::cout << " size = " << obj_size << std::endl;
     const size_t internal_index = _fragment->offset_to_internal_index(from_offset);
     ZFragmentEntry* entry_for_offset = _fragment->find(from_offset);
+
+    _fragment->_objects++;
 
     // Copy liveness information
     entry_for_offset->set_liveness(internal_index);
@@ -59,7 +63,8 @@ public:
       _current_entry = entry_for_offset;
       _current_entry->set_live_bytes_before_fragment(_top);
     }
-
+    _heap->add_expected(from_offset, _top);
+    assert(_top == _heap->get_expected(from_offset), "");
     _top += obj_size;
   }
 };
@@ -88,6 +93,9 @@ public:
   }
 
   virtual void do_object(oop obj) {
+    // _heap->add_expected(652214272, 0);
+    // assert(0 == _heap->get_expected(652214272), "");
+    // assert(false, "") ;
     const uintptr_t from_offset = ZAddress::offset(ZOop::to_address(obj));
     const size_t obj_size = ZUtils::object_size(ZAddress::good(from_offset));
     const size_t internal_index = _fragment->offset_to_internal_index(from_offset);
@@ -132,36 +140,49 @@ void ZRelocationSet::populate(ZPage* const* group0, size_t ngroup0,
   flags.set_worker_thread();
 
   // Populate group 0 (medium)
-  for (size_t i = 0; i < ngroup0; i++) {
-    ZPage* old_page = group0[i];
-    ZFragment* fragment = ZFragment::create(old_page, NULL);
-
-    ZLiveMapIteratorPost cl = ZLiveMapIteratorPost(fragment, flags);
-    old_page->_livemap.iterate(&cl, ZAddress::good(old_page->start()), old_page->object_alignment_shift());
-    _fragments[fragment_index++] = fragment;
-  }
-
-  // Populate group 1 (small)
-  // ZPage* current_new_page = ngroup1 > 0 ? ZHeap::heap()->alloc_page(group1[0]->type(), group1[0]->size(), flags) : NULL;
-  // for (size_t i = 0; i < ngroup1; i++) {
-  //   ZPage* old_page = group1[i];
+  // ZPage* current_new_page = ngroup0 > 0 ? ZHeap::heap()->alloc_page(group0[0]->type(), group0[0]->size(), flags) : NULL;
+  // for (size_t i = 0; i < ngroup0; i++) {
+  //   ZPage* old_page = group0[i];
   //   ZFragment* fragment = ZFragment::create(old_page, current_new_page);
 
-  //   ZLiveMapIterator cl = ZLiveMapIterator(fragment, current_new_page, flags);
+  //   ZLiveMapIterator cl = ZLiveMapIterator(fragment, current_new_page);
   //   old_page->_livemap.iterate(&cl, ZAddress::good(old_page->start()), old_page->object_alignment_shift());
   //   current_new_page = cl.current_page();
   //   _fragments[fragment_index++] = fragment;
   // }
 
-  // Post allocate
-  for (size_t i = 0; i < ngroup1; i++) {
-    ZPage* old_page = group1[i];
+  // POST ALLOCATE
+  std::cout << "# evicted medium pages = " << ngroup0 << std::endl;
+  for (size_t i = 0; i < ngroup0; i++) {
+    std::cout << "page" << i << std::endl;
+    ZPage* old_page = group0[i];
     ZFragment* fragment = ZFragment::create(old_page, NULL);
-
-    ZLiveMapIteratorPost cl = ZLiveMapIteratorPost(fragment, flags);
+    ZLiveMapIteratorPost cl = ZLiveMapIteratorPost(fragment);
     old_page->_livemap.iterate(&cl, ZAddress::good(old_page->start()), old_page->object_alignment_shift());
     _fragments[fragment_index++] = fragment;
   }
+
+  // Populate group 1 (small)
+  ZPage* current_new_page = ngroup1 > 0 ? ZHeap::heap()->alloc_page(group1[0]->type(), group1[0]->size(), flags) : NULL;
+  for (size_t i = 0; i < ngroup1; i++) {
+    ZPage* old_page = group1[i];
+    ZFragment* fragment = ZFragment::create(old_page, current_new_page);
+
+    ZLiveMapIterator cl = ZLiveMapIterator(fragment, current_new_page, flags);
+    old_page->_livemap.iterate(&cl, ZAddress::good(old_page->start()), old_page->object_alignment_shift());
+    current_new_page = cl.current_page();
+    _fragments[fragment_index++] = fragment;
+  }
+
+  // Post allocate
+  // for (size_t i = 0; i < ngroup1; i++) {
+  //   ZPage* old_page = group1[i];
+  //   ZFragment* fragment = ZFragment::create(old_page, NULL);
+
+  //   ZLiveMapIteratorPost cl = ZLiveMapIteratorPost(fragment, flags);
+  //   old_page->_livemap.iterate(&cl, ZAddress::good(old_page->start()), old_page->object_alignment_shift());
+  //   _fragments[fragment_index++] = fragment;
+  // }
 }
 
 void ZRelocationSet::reset() {

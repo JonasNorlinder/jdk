@@ -126,6 +126,10 @@ private:
                               400, std::hash<uintptr_t>(), std::equal_to<uintptr_t>(), map_allocator{a}
   };
 
+  ptr_to_ptr_t expected_dest_offset{
+                              400, std::hash<uintptr_t>(), std::equal_to<uintptr_t>(), map_allocator{a}
+  };
+
   size_t heap_min_size() const;
   size_t heap_initial_size() const;
   size_t heap_max_size() const;
@@ -142,12 +146,17 @@ public:
   ZHeap();
 
   ZLock lock;
+  ZLock lock1;
   ZLockMap lock_map;
 
   void add_remap(uintptr_t from, uintptr_t to);
   uintptr_t get_remap(uintptr_t from) const;
   void remove(uintptr_t from);
   bool contains(uintptr_t from) const;
+
+  void add_expected(uintptr_t from, uintptr_t offset);
+  uintptr_t get_expected(uintptr_t from) const;
+  bool contains_expected(uintptr_t from) const;
 
   bool is_initialized() const;
   // Heap metrics
