@@ -960,10 +960,24 @@ void DumperSupport::dump_instance_fields(DumpWriter* writer, oop o) {
   HandleMark hm;
   InstanceKlass* ik = InstanceKlass::cast(o->klass());
 
+  fprintf(stderr, "instance: ");
+  o->print_address(); // Print base adress for instance
+  fprintf(stderr, "\n");
   for (FieldStream fld(ik, false, false); !fld.eos(); fld.next()) {
     if (!fld.access_flags().is_static()) {
       Symbol* sig = fld.signature();
-      dump_field_value(writer, sig->char_at(0), o, fld.offset());
+      char type = sig->char_at(0);
+      if (type == JVM_SIGNATURE_CLASS || type == JVM_SIGNATURE_ARRAY) {
+
+        oop _oop = o->obj_field_access<ON_UNKNOWN_OOP_REF | AS_NO_KEEPALIVE>(fld.offset());
+        if (_oop != NULL) {
+          sig->print_symbol_on(tty); // print type
+          _oop->print_address(); // print ref addr
+          fprintf(stderr, "\n");
+        }
+      }
+      //      printf("sig->char_at(0) = %c\n", sig->char_at(0));
+      dump_field_value(writer, type, o, fld.offset());
     }
   }
 }

@@ -42,7 +42,7 @@ void oopDesc::print_on(outputStream* st) const {
 }
 
 void oopDesc::print_address_on(outputStream* st) const {
-  st->print("{" INTPTR_FORMAT "}", p2i(this));
+  st->print("OOP ADDR = {" INTPTR_FORMAT "}", p2i(this));
 
 }
 
