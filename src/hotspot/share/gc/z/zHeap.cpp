@@ -44,6 +44,7 @@
 #include "runtime/safepoint.hpp"
 #include "runtime/thread.hpp"
 #include "utilities/debug.hpp"
+#include "utilities/powerOfTwo.hpp"
 
 static const ZStatSampler ZSamplerHeapUsedBeforeMark("Memory", "Heap Used Before Mark", ZStatUnitBytes);
 static const ZStatSampler ZSamplerHeapUsedAfterMark("Memory", "Heap Used After Mark", ZStatUnitBytes);
@@ -59,7 +60,7 @@ ZHeap::ZHeap() :
     _object_allocator(),
     _page_allocator(&_workers, heap_min_size(), heap_initial_size(), heap_max_size(), heap_max_reserve_size()),
     _page_table(),
-    _forwarding_table(),
+    _fragment_table(),
     _mark(&_workers, &_page_table),
     _reference_processor(&_workers),
     _weak_roots_processor(&_workers),
@@ -175,7 +176,6 @@ bool ZHeap::is_in(uintptr_t addr) const {
   // used. Note that an address with the finalizable metadata bit set
   // is not pointing into a heap view, and therefore not considered
   // to be "in the heap".
-
   if (ZAddress::is_in(addr)) {
     const ZPage* const page = _page_table.get(addr);
     if (page != NULL) {
@@ -405,10 +405,10 @@ void ZHeap::select_relocation_set() {
   // Select pages to relocate
   selector.select(&_relocation_set);
 
-  // Setup forwarding table
+  // Setup fragment table
   ZRelocationSetIterator rs_iter(&_relocation_set);
-  for (ZForwarding* forwarding; rs_iter.next(&forwarding);) {
-    _forwarding_table.insert(forwarding);
+  for (ZFragment* fragment; rs_iter.next(&fragment);) {
+    _fragment_table.insert(fragment);
   }
 
   // Update statistics
@@ -417,12 +417,11 @@ void ZHeap::select_relocation_set() {
 }
 
 void ZHeap::reset_relocation_set() {
-  // Reset forwarding table
+  // Reset fragment table
   ZRelocationSetIterator iter(&_relocation_set);
-  for (ZForwarding* forwarding; iter.next(&forwarding);) {
-    _forwarding_table.remove(forwarding);
+  for (ZFragment* fragment; iter.next(&fragment);) {
+    _fragment_table.remove(fragment);
   }
-
   // Reset relocation set
   _relocation_set.reset();
 }
