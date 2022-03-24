@@ -78,6 +78,53 @@ ZHeap::ZHeap() :
   ZStatHeap::set_at_initialize(heap_min_size(), heap_max_size(), heap_max_reserve_size());
 }
 
+
+void ZHeap::add_remap(uintptr_t from, uintptr_t to) {
+  if (contains(from) || contains_a(to)) {
+    if (!(contains(from) && contains_a(to)) ||
+        !(get_remap(from) == to) ||
+        !(get_remap_a(to) == from)) {
+      uintptr_t f = contains(from) ? get_remap(from) : 0;
+      uintptr_t t = contains_a(to) ? get_remap_a(to) : 0;
+
+      std::cout << "from = " << std::hex << from << std::endl;
+      std::cout << "to = " << std::hex << to << std::endl;
+
+      std::cout << "get_remap(from) = " << std::hex << f << std::endl;
+      std::cout << "get_remap(to) = " << std::hex << t << std::endl;
+    }
+    assert(contains(from) && contains_a(to), "should already exist in both directions");
+    assert(get_remap(from) == to, "should be the same");
+    assert(get_remap_a(to) == from, "should be the same");
+    return;
+  }
+  assert(from==ZAddress::offset(from), "");
+  object_remaped[from] = to;
+  object_remaped_a[to] = from;
+}
+
+void ZHeap::remove(uintptr_t from) {
+  object_remaped.erase(from);
+}
+
+bool ZHeap::contains(uintptr_t from) const {
+  return object_remaped.count(from) == 1;
+}
+
+bool ZHeap::contains_a(uintptr_t from) const {
+  return object_remaped_a.count(from) == 1;
+}
+
+uintptr_t ZHeap::get_remap(uintptr_t from) const {
+  assert(contains(from), "must already exist on get");
+  return object_remaped.at(from);
+}
+
+uintptr_t ZHeap::get_remap_a(uintptr_t from) const {
+  assert(contains_a(from), "must already exist on get");
+  return object_remaped_a.at(from);
+}
+
 size_t ZHeap::heap_min_size() const {
   return MinHeapSize;
 }
@@ -408,6 +455,8 @@ void ZHeap::select_relocation_set() {
   // Select pages to relocate
   selector.select(&_relocation_set);
 
+  object_remaped.clear();
+  object_remaped_a.clear();
   // Setup fragment table
   ZRelocationSetIterator rs_iter(&_relocation_set);
   for (ZFragment* fragment; rs_iter.next(&fragment);) {

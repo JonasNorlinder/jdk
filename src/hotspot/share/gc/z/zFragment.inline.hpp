@@ -9,18 +9,39 @@
 #include "gc/z/zHeap.hpp"
 #include "gc/z/zHash.inline.hpp"
 #include "runtime/atomic.hpp"
+#include "gc/z/zThread.inline.hpp"
 #include <iostream>
 
-inline void ZFragment::set_new_page(ZPage* page) {
-  _new_page = page;
-}
-
-inline ZPage* ZFragment::new_page(uintptr_t from_offset) const {
-  if (_snd_page && from_offset >= _first_from_offset_mapped_to_snd_page) {
+inline ZPage* ZFragment::new_page(uintptr_t from_offset) {
+  if (from_offset >= _first_from_offset_mapped_to_snd_page &&
+      _first_from_offset_mapped_to_snd_page > 0) {
+    if (!_snd_page) {
+      alloc_page(&_snd_page);
+    }
     return _snd_page;
   } else {
-    return _new_page;
+    if (!_new_page && continues_from_previous_fragment()) {
+      // Case 1: Overlapping
+      _new_page = _previous_fragment->last_page();
+    }
+    else if (!_new_page) {
+      // Case 0: I am first
+      alloc_page(&_new_page);
+    }
   }
+  return _new_page;
+}
+
+inline void ZFragment::reset() {
+  _previous_fragment = NULL;
+}
+
+inline bool ZFragment::continues_from_previous_fragment() const {
+  return _previous_fragment != NULL;
+}
+
+inline ZPage* ZFragment::last_page() {
+  return new_page(_first_from_offset_mapped_to_snd_page);
 }
 
 inline ZPage* ZFragment::old_page() const {
@@ -45,6 +66,26 @@ inline ZFragmentEntry* ZFragment::entries_begin() const {
 
 inline ZFragmentEntry* ZFragment::entries_end() {
   return entries_begin() + _entries.length();
+}
+
+inline void ZFragment::alloc_page(ZPage** page) {
+  ZHeap* heap = ZHeap::heap();
+  ZAllocationFlags flags;
+  flags.set_relocation();
+  flags.set_non_blocking();
+
+  if (ZThread::is_worker()) {
+    flags.set_worker_thread();
+  }
+
+  ZPage* p = heap->alloc_page(_page_type, _page_size, flags);
+  assert(p != NULL, "out-of-memory handling not supported yet");
+  p->set_top(_page_size);
+  // Get NULL => success
+  ZPage* page_prev = Atomic::cmpxchg(page, (ZPage*)NULL, p);
+  if (page_prev) {
+    heap->undo_alloc_page(p);
+  }
 }
 
 inline bool ZFragment::inc_refcount() {
@@ -103,19 +144,21 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset) {
 }
 
 inline size_t ZFragment::page_break_entry_index() const {
+  assert(_first_from_offset_mapped_to_snd_page > 0, "");
   return _page_break_entry_index;
 }
 
 inline size_t ZFragment::page_break_entry_internal_index() const {
+  assert(_first_from_offset_mapped_to_snd_page > 0, "");
   return _page_break_entry_internal_index;
 }
 
 inline bool ZFragment::is_on_snd_page(uintptr_t from_offset) const {
-  return from_offset >= _first_from_offset_mapped_to_snd_page && _snd_page;
+  return from_offset >= _first_from_offset_mapped_to_snd_page && _first_from_offset_mapped_to_snd_page;
 }
 
 inline bool ZFragment::is_on_page_break(ZFragmentEntry *entry) {
-  return (entry == entries_begin() + _page_break_entry_index) && _snd_page;
+  return (entry == entries_begin() + _page_break_entry_index) && _first_from_offset_mapped_to_snd_page;
 }
 
 inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* entry) {
@@ -128,8 +171,7 @@ inline uintptr_t ZFragment::to_offset(uintptr_t from_offset, ZFragmentEntry* ent
     entry->live_bytes_on_fragment(_ops, from_offset, this);
 }
 
-inline void ZFragment::add_page_break(ZPage *snd_page, uintptr_t first_on_snd) {
-  _snd_page = snd_page;
+inline void ZFragment::add_page_break(uintptr_t first_on_snd) {
   _first_from_offset_mapped_to_snd_page = first_on_snd;
   _page_break_entry_index = offset_to_index(first_on_snd);
   _page_break_entry_internal_index = offset_to_internal_index(first_on_snd);
